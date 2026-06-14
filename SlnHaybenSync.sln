@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37328.6 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProySistemaVentas", "ProyHaybenSync\ProySistemaVentas.csproj", "{3C5ECC6E-0ACB-4B30-83E2-32F510E364DB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C5ECC6E-0ACB-4B30-83E2-32F510E364DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C5ECC6E-0ACB-4B30-83E2-32F510E364DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C5ECC6E-0ACB-4B30-83E2-32F510E364DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C5ECC6E-0ACB-4B30-83E2-32F510E364DB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B2D92ED4-DE44-4ADD-98AB-76D533977F75}
+	EndGlobalSection
+EndGlobal
