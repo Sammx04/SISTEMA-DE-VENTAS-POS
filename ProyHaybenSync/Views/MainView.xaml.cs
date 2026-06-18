@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProySistemaVentas.Views.UserControls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,14 @@ namespace ProySistemaVentas.Views
         public MainView()
         {
             InitializeComponent();
+        }
+
+        private void BtnUsuarios_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            ContenidoPrincipal.Content =
+                new UsuariosControl();
         }
     }
 }

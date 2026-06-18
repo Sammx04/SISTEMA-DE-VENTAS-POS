@@ -60,46 +60,32 @@ namespace ProySistemaVentas.Services
         }
 
         public bool CrearUsuario(
-            string nombre, string usuario, string password, int idRol)
+            string nombre,
+            string usuario,
+            string password,
+            int idRol)
         {
-            try
-            {
-                using SqlConnection cn =
-                    new SqlConnection(
-                        ConexionService.ObtenerCadenaConexion());
+            using SqlConnection cn =
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
 
-                using SqlCommand cmd =
-                    new SqlCommand(
-                        "sp_crear_usuario",
-                        cn);
+            using SqlCommand cmd =
+                new SqlCommand(
+                    "sp_crear_usuario",
+                    cn);
 
-                cmd.CommandType =
-                    System.Data.CommandType.StoredProcedure;
+            cmd.CommandType =
+                CommandType.StoredProcedure;
 
-                cmd.Parameters.AddWithValue(
-                    "@nombre",
-                    nombre);
+            cmd.Parameters.AddWithValue("@nombre", nombre);
+            cmd.Parameters.AddWithValue("@usuario", usuario);
+            cmd.Parameters.AddWithValue("@password", password);
+            cmd.Parameters.AddWithValue("@id_rol", idRol);
 
-                cmd.Parameters.AddWithValue(
-                    "@usuario",
-                    usuario);
+            cn.Open();
 
-                cmd.Parameters.AddWithValue(
-                    "@password",
-                    password);
-
-                cmd.Parameters.AddWithValue(
-                    "@id_rol",
-                    idRol);
-
-                cn.Open();
-
-                return cmd.ExecuteNonQuery() > 0;
-            }
-            catch
-            {
-                throw;
-            }
+            return Convert.ToBoolean(
+                cmd.ExecuteScalar());
         }
 
         public List<Rol> ObtenerRoles()
@@ -217,7 +203,7 @@ namespace ProySistemaVentas.Services
             return lista;
         }
 
-        public bool CambiarEstadoUsuario( int idUsuario,bool estado)
+        public bool CambiarEstadoUsuario(int idUsuario,bool estado)
         {
             using SqlConnection cn =
                 new SqlConnection(
@@ -241,7 +227,97 @@ namespace ProySistemaVentas.Services
 
             cn.Open();
 
-            return cmd.ExecuteNonQuery() > 0;
+            return Convert.ToBoolean(
+                cmd.ExecuteScalar());
+        }
+
+        public Usuario ObtenerUsuarioPorId(int idUsuario)
+        {
+            using SqlConnection cn =
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
+
+            string sql =
+                @"SELECT
+            id_usuario,
+            nombre,
+            usuario,
+            id_rol,
+            estado
+          FROM usuarios
+          WHERE id_usuario = @id";
+
+            using SqlCommand cmd =
+                new SqlCommand(sql, cn);
+
+            cmd.Parameters.AddWithValue("@id", idUsuario);
+
+            cn.Open();
+
+            using SqlDataReader dr =
+                cmd.ExecuteReader();
+
+            if (dr.Read())
+            {
+                return new Usuario
+                {
+                    IdUsuario = Convert.ToInt32(
+                        dr["id_usuario"]),
+
+                    Nombre = dr["nombre"].ToString()!,
+
+                    UsuarioLogin = dr["usuario"].ToString()!,
+
+                    IdRol = Convert.ToInt32(
+                        dr["id_rol"]),
+
+                    Estado = Convert.ToBoolean(
+                        dr["estado"])
+                };
+            }
+
+            return null!;
+        }
+
+        public bool ActualizarUsuario(int idUsuario, string nombre,string usuario,int idRol,bool estado)
+        {
+            using SqlConnection cn =
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
+
+            using SqlCommand cmd =
+                new SqlCommand(
+                    "sp_actualizar_usuario",
+                    cn);
+
+            cmd.CommandType =
+                CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue(
+                "@id_usuario",
+                idUsuario);
+
+            cmd.Parameters.AddWithValue(
+                "@nombre",
+                nombre);
+
+            cmd.Parameters.AddWithValue(
+                "@usuario",
+                usuario);
+
+            cmd.Parameters.AddWithValue(
+                "@id_rol",
+                idRol);
+
+            cmd.Parameters.AddWithValue(
+                "@estado",
+                estado);
+
+            cn.Open();
+
+            return Convert.ToBoolean(
+                cmd.ExecuteScalar());
         }
     }
 }
+    

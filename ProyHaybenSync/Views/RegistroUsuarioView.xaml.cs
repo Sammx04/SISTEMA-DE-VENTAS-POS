@@ -9,7 +9,9 @@ namespace ProySistemaVentas.Views
     /// </summary>
     public partial class RegistroUsuarioView : Window
     {
+        
         private readonly UsuarioService _usuarioService;
+        public bool UsuarioCreado { get; private set; }
 
         public RegistroUsuarioView()
         {
@@ -32,28 +34,29 @@ namespace ProySistemaVentas.Views
 
             if (string.IsNullOrWhiteSpace(txtNombre.Text))
             {
-                MessageBox.Show("Ingrese el nombre");
+                MessageBox.Show(
+                    "Ingrese el nombre");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(txtUsuario.Text))
             {
-                MessageBox.Show("Ingrese el usuario");
+                MessageBox.Show(
+                    "Ingrese el usuario");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(txtPassword.Password))
             {
-                MessageBox.Show("Ingrese la contraseña");
+                MessageBox.Show(
+                    "Ingrese la contraseña");
                 return;
             }
-
 
             if (cmbRol.SelectedValue == null)
             {
                 MessageBox.Show(
                     "Seleccione un rol");
-
                 return;
             }
 
@@ -66,10 +69,23 @@ namespace ProySistemaVentas.Views
 
             if (guardado)
             {
+                UsuarioCreado = true;
+
                 MessageBox.Show(
-                    "Usuario registrado");
+                    "Usuario registrado correctamente.",
+                    "Sistema",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
 
                 Close();
+            }
+            else
+            {
+                MessageBox.Show(
+                    "No se pudo registrar el usuario.",
+                    "Sistema",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
     }

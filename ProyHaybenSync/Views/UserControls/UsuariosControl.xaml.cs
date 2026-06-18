@@ -1,29 +1,17 @@
 ﻿using ProySistemaVentas.Models;
 using ProySistemaVentas.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-
-namespace ProySistemaVentas.Views
+namespace ProySistemaVentas.Views.UserControls
 {
     /// <summary>
-    /// Lógica de interacción para UsuariosView.xaml
+    /// Lógica de interacción para UsuariosControl.xaml
     /// </summary>
-    public partial class UsuariosView : Window
+    public partial class UsuariosControl : UserControl
     {
         private readonly UsuarioService _usuarioService;
 
-        public UsuariosView()
+        public UsuariosControl()
         {
             InitializeComponent();
 
@@ -32,9 +20,10 @@ namespace ProySistemaVentas.Views
 
             CargarUsuarios();
         }
+
         private void BtnNuevo_Click(
-            object sender,
-            RoutedEventArgs e)
+    object sender,
+    RoutedEventArgs e)
         {
             var ventana =
                 new RegistroUsuarioView();
@@ -57,7 +46,7 @@ namespace ProySistemaVentas.Views
             dgUsuarios.Items.Refresh();
         }
 
-        private void BtnBuscar_Click(object sender,RoutedEventArgs e)
+        private void BtnBuscar_Click(object sender, RoutedEventArgs e)
         {
             dgUsuarios.ItemsSource =
                 _usuarioService.BuscarUsuarios(
@@ -124,7 +113,7 @@ namespace ProySistemaVentas.Views
             }
         }
 
-        private void BtnEditar_Click( object sender,  RoutedEventArgs e)
+        private void BtnEditar_Click(object sender, RoutedEventArgs e)
         {
             if (dgUsuarios.SelectedItem == null)
             {

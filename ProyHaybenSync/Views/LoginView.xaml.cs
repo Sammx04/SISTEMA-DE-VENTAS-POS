@@ -42,9 +42,9 @@ namespace ProySistemaVentas.Views
                 return;
             }
 
-            UsuariosView usuarios = new UsuariosView();
+            MainView main =new MainView();
 
-            usuarios.Show();
+            main.Show();
 
             this.Close();
         }

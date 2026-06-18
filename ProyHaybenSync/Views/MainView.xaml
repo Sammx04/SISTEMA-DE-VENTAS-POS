@@ -27,6 +27,11 @@
                     Margin="10"
                     Height="40"/>
 
+            <Button Content="Usuarios"
+                    Margin="10"
+                    Height="40"
+                    Click="BtnUsuarios_Click"/>
+
             <Button Content="Ventas"
                     Margin="10"
                     Height="40"/>
@@ -44,11 +49,7 @@
         <!-- Área principal -->
         <Grid Grid.Column="1">
 
-            <TextBlock
-                Text="Bienvenido al Sistema"
-                FontSize="30"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"/>
+            <ContentControl x:Name="ContenidoPrincipal"/>
 
         </Grid>
 
