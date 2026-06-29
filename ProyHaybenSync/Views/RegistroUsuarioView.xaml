@@ -2,52 +2,289 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Registrar Usuario"
-        Height="450"
-        Width="400"
-        WindowStartupLocation="CenterScreen">
+        Height="477"
+        Width="421"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F172A"
+        ResizeMode="NoResize"
+        BorderBrush="#1E293B"
+        BorderThickness="1">
 
-    <Grid Margin="20">
+    <Window.Resources>
+        <!-- Colores globales -->
+        <SolidColorBrush x:Key="TextTitle" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextLabel" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="AccentCyan" Color="#22D3EE"/>
+        <SolidColorBrush x:Key="AccentCyanDark" Color="#164E63"/>
+        <SolidColorBrush x:Key="InputBackground" Color="#1E293B"/>
+        <SolidColorBrush x:Key="InputBorder" Color="#334155"/>
+        <SolidColorBrush x:Key="InputForeground" Color="#E2E8F0"/>
 
-        <StackPanel>
+        <!-- ESTILO PARA EL TOGGLEBUTTON DEL COMBOBOX -->
+        <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
+            <Border x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="6">
+                <ContentPresenter/>
+            </Border>
+        </ControlTemplate>
 
-            <TextBlock
-                Text="Registrar Usuario"
-                FontSize="22"
-                FontWeight="Bold"
-                Margin="0,0,0,20"/>
+        <!-- Estilo para TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource InputBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource InputForeground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CaretBrush" Value="{StaticResource AccentCyan}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="0" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentCyan}"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#4A5B7A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-            <TextBlock Text="Nombre"/>
+        <!-- Estilo para PasswordBox -->
+        <Style TargetType="PasswordBox">
+            <Setter Property="Background" Value="{StaticResource InputBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource InputForeground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CaretBrush" Value="{StaticResource AccentCyan}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="0" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentCyan}"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#4A5B7A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-            <TextBox
-                x:Name="txtNombre"
-                Margin="0,5,0,10"/>
+        <!-- ESTILO COMBOBOX (CON OPCIONES MÁS ANCHAS) -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource InputBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource InputForeground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <!-- Padding aumentado para que las opciones sean más anchas -->
+                        <Setter Property="Padding" Value="16,10"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#E2E8F0"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentCyanDark}"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentCyan}"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Grid.ColumnSpan="2"
+                                          Background="{TemplateBinding Background}"
+                                          BorderBrush="{TemplateBinding BorderBrush}"
+                                          BorderThickness="{TemplateBinding BorderThickness}"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                          ClickMode="Press"
+                                          Template="{StaticResource ComboBoxToggleButton}"/>
+                            <ContentPresenter x:Name="ContentSite"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left"
+                                              Margin="{TemplateBinding Padding}"
+                                              IsHitTestVisible="False"/>
+                            <Path x:Name="Arrow"
+                                  Data="M0,0 L4,5 L8,0 Z"
+                                  Fill="{StaticResource TextLabel}"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,12,0"
+                                  IsHitTestVisible="False"/>
+                            <Popup x:Name="PART_Popup"
+                                   IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <!-- Popup con MinWidth para que sea más ancho -->
+                                <Border Background="#1E293B"
+                                        BorderBrush="#334155"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        MaxHeight="300"
+                                        MinWidth="350"
+                                        Margin="0,2,0,0">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="ToggleButton" Property="BorderBrush" Value="{StaticResource AccentCyan}"/>
+                                <Setter TargetName="ToggleButton" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ToggleButton" Property="BorderBrush" Value="#4A5B7A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-            <TextBlock Text="Usuario"/>
+        <!-- Estilo para el botón Guardar -->
+        <Style x:Key="BtnGuardar" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentCyan}"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#67E8F9"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentCyanDark}"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
-            <TextBox
-                x:Name="txtUsuario"
-                Margin="0,5,0,10"/>
+        <!-- Estilo para etiquetas -->
+        <Style TargetType="TextBlock" x:Key="LabelStyle">
+            <Setter Property="Foreground" Value="{StaticResource TextLabel}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </Window.Resources>
 
-            <TextBlock Text="Contraseña"/>
+    <!-- Contenedor principal -->
+    <Border Background="#0F172A" CornerRadius="8" Padding="25" Margin="0,0,-2,-46">
+        <Grid RenderTransformOrigin="0.5,0.5" Height="443" VerticalAlignment="Top">
+            <Grid.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform Angle="0.166"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Grid.RenderTransform>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-            <PasswordBox
-                x:Name="txtPassword"
-                Margin="0,5,0,10"/>
+            <!-- Encabezado -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,25">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="👤" FontSize="28" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Registrar Usuario" 
+                               FontSize="24" 
+                               FontWeight="Bold" 
+                               Foreground="{StaticResource TextTitle}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="Ingresa los datos del nuevo usuario" 
+                           FontSize="13" 
+                           Foreground="{StaticResource TextLabel}"
+                           HorizontalAlignment="Center"
+                           Margin="0,5,0,0"/>
+            </StackPanel>
 
-            <TextBlock Text="Rol"/>
+            <!-- Formulario -->
+            <StackPanel Grid.Row="1">
+                <TextBlock Text="Nombre completo" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="txtNombre" Margin="0,0,0,15"/>
 
-            <ComboBox
-                x:Name="cmbRol"
-                DisplayMemberPath="Nombre"
-                SelectedValuePath="IdRol"
-                Margin="0,5,0,20"/>
+                <TextBlock Text="Nombre de usuario" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="txtUsuario" Margin="0,0,0,15"/>
 
-            <Button
-                Content="Guardar Usuario"
-                Click="BtnGuardar_Click"/>
+                <TextBlock Text="Contraseña" Style="{StaticResource LabelStyle}"/>
+                <PasswordBox x:Name="txtPassword" Margin="0,0,0,15"/>
 
-        </StackPanel>
+                <TextBlock Text="Rol" Style="{StaticResource LabelStyle}"/>
+                <ComboBox x:Name="cmbRol" 
+                          DisplayMemberPath="Nombre" 
+                          SelectedValuePath="IdRol" 
+                          Margin="0,0,0,25"/>
 
-    </Grid>
-
+                <Button Content="Guardar Usuario" 
+                        Style="{StaticResource BtnGuardar}" 
+                        Click="BtnGuardar_Click"
+                        Height="44"
+                        FontSize="15"/>
+            </StackPanel>
+        </Grid>
+    </Border>
 </Window>

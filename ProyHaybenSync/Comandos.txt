@@ -1,0 +1,14 @@
+﻿# Verificar cambios locales
+git status
+
+# Agregar cambios
+git add .
+
+# Guardar un commit
+git commit -m "Descripción"
+
+# Subir cambios a tu rama
+git push
+
+# Consultar si hay novedades en GitHub
+git fetch
