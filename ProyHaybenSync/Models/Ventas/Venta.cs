@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProySistemaVentas.Models
+namespace ProySistemaVentas.Models.Ventas
 {
     public class Venta
     {
