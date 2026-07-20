@@ -1,0 +1,748 @@
+﻿<Window x:Class="ProySistemaVentas.Views.Dialogs.DetalleProductoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Detalle del producto"
+        Width="780"
+        Height="590"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+
+        <!-- COLORES -->
+
+        <SolidColorBrush x:Key="ColorFondo"
+                         Color="#0B1120"/>
+
+        <SolidColorBrush x:Key="ColorPanel"
+                         Color="#0D1526"/>
+
+        <SolidColorBrush x:Key="ColorPanelClaro"
+                         Color="#13203A"/>
+
+        <SolidColorBrush x:Key="ColorPanelSecundario"
+                         Color="#101B31"/>
+
+        <SolidColorBrush x:Key="ColorBorde"
+                         Color="#24344F"/>
+
+        <SolidColorBrush x:Key="ColorTexto"
+                         Color="#FFFFFF"/>
+
+        <SolidColorBrush x:Key="ColorTextoSecundario"
+                         Color="#94A3B8"/>
+
+        <SolidColorBrush x:Key="ColorCyan"
+                         Color="#22D3EE"/>
+
+        <SolidColorBrush x:Key="ColorCyanClaro"
+                         Color="#67E8F9"/>
+
+        <SolidColorBrush x:Key="ColorVerde"
+                         Color="#22C55E"/>
+
+        <SolidColorBrush x:Key="ColorAmarillo"
+                         Color="#F59E0B"/>
+
+        <!-- BOTÓN CERRAR SUPERIOR -->
+
+        <Style x:Key="BotonCerrarVentana"
+               TargetType="Button">
+
+            <Setter Property="Width"
+                    Value="36"/>
+
+            <Setter Property="Height"
+                    Value="36"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTextoSecundario}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="FontSize"
+                    Value="15"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="#263650"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#FFFFFF"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.70"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- BOTÓN PRINCIPAL -->
+
+        <Style x:Key="BotonAceptar"
+               TargetType="Button">
+
+            <Setter Property="Height"
+                    Value="42"/>
+
+            <Setter Property="MinWidth"
+                    Value="130"/>
+
+            <Setter Property="Padding"
+                    Value="25,0"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorCyan}"/>
+
+            <Setter Property="Foreground"
+                    Value="#07111D"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="9"
+                                Padding="{TemplateBinding Padding}">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="{StaticResource ColorCyanClaro}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.75"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- TEXTO DE ETIQUETA -->
+
+        <Style x:Key="TextoEtiqueta"
+               TargetType="TextBlock">
+
+            <Setter Property="FontSize"
+                    Value="11"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTextoSecundario}"/>
+
+        </Style>
+
+        <!-- TEXTO DE VALOR -->
+
+        <Style x:Key="TextoValor"
+               TargetType="TextBlock">
+
+            <Setter Property="Margin"
+                    Value="0,5,0,0"/>
+
+            <Setter Property="FontSize"
+                    Value="14"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTexto}"/>
+
+            <Setter Property="TextTrimming"
+                    Value="CharacterEllipsis"/>
+
+        </Style>
+
+    </Window.Resources>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+
+    <Border Background="{StaticResource ColorPanel}"
+            BorderBrush="{StaticResource ColorBorde}"
+            BorderThickness="1"
+            CornerRadius="16">
+
+        <Border.Effect>
+
+            <DropShadowEffect Color="#000000"
+                              BlurRadius="28"
+                              ShadowDepth="5"
+                              Opacity="0.55"/>
+
+        </Border.Effect>
+
+        <Grid>
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="68"/>
+
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="72"/>
+
+            </Grid.RowDefinitions>
+
+            <!-- ENCABEZADO -->
+
+            <Border Grid.Row="0"
+                    Background="{StaticResource ColorPanelClaro}"
+                    BorderBrush="{StaticResource ColorBorde}"
+                    BorderThickness="0,0,0,1"
+                    CornerRadius="16,16,0,0"
+                    MouseLeftButtonDown="Encabezado_MouseLeftButtonDown">
+
+                <Grid Margin="24,0,16,0">
+
+                    <Grid.ColumnDefinitions>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                        <ColumnDefinition Width="*"/>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ÍCONO -->
+
+                    <Border Grid.Column="0"
+                            Width="40"
+                            Height="40"
+                            CornerRadius="10"
+                            Background="#123047"
+                            BorderBrush="{StaticResource ColorCyan}"
+                            BorderThickness="1"
+                            VerticalAlignment="Center">
+
+                        <TextBlock Text="▣"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="19"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ColorCyan}"/>
+
+                    </Border>
+
+                    <StackPanel Grid.Column="1"
+                                Margin="14,0,0,0"
+                                VerticalAlignment="Center">
+
+                        <TextBlock Text="Detalle del producto"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource ColorTexto}"/>
+
+                        <TextBlock Text="Información general, precios y variantes"
+                                   Margin="0,3,0,0"
+                                   FontSize="11"
+                                   Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Content="✕"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource BotonCerrarVentana}"
+                            Click="BtnCerrar_Click"/>
+
+                </Grid>
+
+            </Border>
+
+            <!-- CONTENIDO -->
+
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+
+                <StackPanel Margin="25,22,25,22">
+
+                    <!-- DATOS PRINCIPALES -->
+
+                    <Border Background="{StaticResource ColorPanelClaro}"
+                            BorderBrush="{StaticResource ColorBorde}"
+                            BorderThickness="1"
+                            CornerRadius="13"
+                            Padding="20">
+
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+
+                                <ColumnDefinition Width="*"/>
+
+                                <ColumnDefinition Width="Auto"/>
+
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+
+                                <TextBlock Text="PRODUCTO"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource ColorCyan}"/>
+
+                                <TextBlock Text="{Binding Nombre}"
+                                           Margin="0,6,20,0"
+                                           FontSize="23"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource ColorTexto}"
+                                           TextWrapping="Wrap"/>
+
+                                <TextBlock Text="{Binding NombreCategoria}"
+                                           Margin="0,8,0,0"
+                                           FontSize="13"
+                                           Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                            </StackPanel>
+
+                            <!-- STOCK TOTAL -->
+
+                            <Border Grid.Column="1"
+                                    MinWidth="125"
+                                    Padding="18,12"
+                                    Background="#102C2A"
+                                    BorderBrush="{StaticResource ColorVerde}"
+                                    BorderThickness="1"
+                                    CornerRadius="11"
+                                    VerticalAlignment="Center">
+
+                                <StackPanel HorizontalAlignment="Center">
+
+                                    <TextBlock Text="STOCK TOTAL"
+                                               HorizontalAlignment="Center"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="#86EFAC"/>
+
+                                    <TextBlock Text="{Binding StockTotal}"
+                                               Margin="0,5,0,0"
+                                               HorizontalAlignment="Center"
+                                               FontSize="27"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource ColorVerde}"/>
+
+                                </StackPanel>
+
+                            </Border>
+
+                        </Grid>
+
+                    </Border>
+
+                    <!-- RESUMEN -->
+
+                    <UniformGrid Columns="3"
+                                 Margin="0,14,0,0">
+
+                        <!-- CÓDIGO BASE -->
+
+                        <Border Margin="0,0,8,0"
+                                Padding="16"
+                                Background="{StaticResource ColorPanelSecundario}"
+                                BorderBrush="{StaticResource ColorBorde}"
+                                BorderThickness="1"
+                                CornerRadius="11">
+
+                            <StackPanel>
+
+                                <TextBlock Text="Código base"
+                                           Style="{StaticResource TextoEtiqueta}"/>
+
+                                <TextBlock Text="{Binding CodigoBase}"
+                                           Style="{StaticResource TextoValor}"
+                                           Foreground="{StaticResource ColorCyanClaro}"/>
+
+                            </StackPanel>
+
+                        </Border>
+
+                        <!-- CATEGORÍA -->
+
+                        <Border Margin="4,0"
+                                Padding="16"
+                                Background="{StaticResource ColorPanelSecundario}"
+                                BorderBrush="{StaticResource ColorBorde}"
+                                BorderThickness="1"
+                                CornerRadius="11">
+
+                            <StackPanel>
+
+                                <TextBlock Text="Categoría"
+                                           Style="{StaticResource TextoEtiqueta}"/>
+
+                                <TextBlock Text="{Binding NombreCategoria}"
+                                           Style="{StaticResource TextoValor}"/>
+
+                            </StackPanel>
+
+                        </Border>
+
+                        <!-- VARIANTES -->
+
+                        <Border Margin="8,0,0,0"
+                                Padding="16"
+                                Background="{StaticResource ColorPanelSecundario}"
+                                BorderBrush="{StaticResource ColorBorde}"
+                                BorderThickness="1"
+                                CornerRadius="11">
+
+                            <StackPanel>
+
+                                <TextBlock Text="Cantidad de variantes"
+                                           Style="{StaticResource TextoEtiqueta}"/>
+
+                                <TextBlock Text="{Binding CantidadVariantes, Mode=OneWay}"
+                                           Style="{StaticResource TextoValor}"
+                                           Foreground="{StaticResource ColorAmarillo}"/>
+
+                            </StackPanel>
+
+                        </Border>
+
+                    </UniformGrid>
+
+                    <!-- DESCRIPCIÓN -->
+
+                    <Border Margin="0,14,0,0"
+                            Padding="18"
+                            Background="{StaticResource ColorPanelSecundario}"
+                            BorderBrush="{StaticResource ColorBorde}"
+                            BorderThickness="1"
+                            CornerRadius="11">
+
+                        <StackPanel>
+
+                            <TextBlock Text="DESCRIPCIÓN"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource ColorCyan}"/>
+
+                            <TextBlock x:Name="TxtDescripcion"
+                                       Margin="0,8,0,0"
+                                       FontSize="13"
+                                       LineHeight="20"
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <!-- VARIANTES -->
+
+                    <Border Margin="0,14,0,0"
+                            Background="{StaticResource ColorPanelSecundario}"
+                            BorderBrush="{StaticResource ColorBorde}"
+                            BorderThickness="1"
+                            CornerRadius="11">
+
+                        <StackPanel>
+
+                            <!-- TÍTULO DE VARIANTES -->
+
+                            <Grid Margin="18,16,18,14">
+
+                                <Grid.ColumnDefinitions>
+
+                                    <ColumnDefinition Width="*"/>
+
+                                    <ColumnDefinition Width="Auto"/>
+
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+
+                                    <TextBlock Text="VARIANTES DEL PRODUCTO"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ColorCyan}"/>
+
+                                    <TextBlock Text="Precios, códigos y stock por ubicación"
+                                               Margin="0,4,0,0"
+                                               FontSize="12"
+                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                </StackPanel>
+
+                                <Border Grid.Column="1"
+                                        Padding="11,5"
+                                        Background="#123047"
+                                        CornerRadius="12"
+                                        VerticalAlignment="Center">
+
+                                    <TextBlock Foreground="{StaticResource ColorCyanClaro}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold">
+
+                                        <Run Text="{Binding CantidadVariantes, Mode=OneWay}"/>
+
+                                        <Run Text=" variantes"/>
+
+                                    </TextBlock>
+
+                                </Border>
+
+                            </Grid>
+
+                            <!-- CABECERA -->
+
+                            <Border Background="{StaticResource ColorPanelClaro}"
+                                    BorderBrush="{StaticResource ColorBorde}"
+                                    BorderThickness="0,1,0,1"
+                                    Padding="14,11">
+
+                                <Grid>
+
+                                    <Grid.ColumnDefinitions>
+
+                                        <ColumnDefinition Width="145"/>
+
+                                        <ColumnDefinition Width="125"/>
+
+                                        <ColumnDefinition Width="90"/>
+
+                                        <ColumnDefinition Width="90"/>
+
+                                        <ColumnDefinition Width="70"/>
+
+                                        <ColumnDefinition Width="70"/>
+
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="Descripción"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="Código"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="Precio U."
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                    <TextBlock Grid.Column="3"
+                                               Text="Precio M."
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                    <TextBlock Grid.Column="4"
+                                               Text="Almacén"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                    <TextBlock Grid.Column="5"
+                                               Text="Tienda"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                </Grid>
+
+                            </Border>
+
+                            <!-- LISTADO -->
+
+                            <ItemsControl ItemsSource="{Binding Variantes}">
+
+                                <ItemsControl.ItemTemplate>
+
+                                    <DataTemplate>
+
+                                        <Border BorderBrush="{StaticResource ColorBorde}"
+                                                BorderThickness="0,0,0,1"
+                                                Padding="14,13">
+
+                                            <Grid>
+
+                                                <Grid.ColumnDefinitions>
+
+                                                    <ColumnDefinition Width="145"/>
+
+                                                    <ColumnDefinition Width="125"/>
+
+                                                    <ColumnDefinition Width="90"/>
+
+                                                    <ColumnDefinition Width="90"/>
+
+                                                    <ColumnDefinition Width="70"/>
+
+                                                    <ColumnDefinition Width="70"/>
+
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding VarianteDescripcion}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource ColorTexto}"
+                                                           TextTrimming="CharacterEllipsis"/>
+
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding CodigoBarras}"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource ColorCyanClaro}"/>
+
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding PrecioUnidad, StringFormat=S/ {0:N2}}"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource ColorTexto}"/>
+
+                                                <TextBlock Grid.Column="3"
+                                                           Text="{Binding PrecioMayor, StringFormat=S/ {0:N2}}"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource ColorTexto}"/>
+
+                                                <TextBlock Grid.Column="4"
+                                                           Text="{Binding StockAlmacen}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource ColorVerde}"/>
+
+                                                <TextBlock Grid.Column="5"
+                                                           Text="{Binding StockTienda}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource ColorAmarillo}"/>
+
+                                            </Grid>
+
+                                        </Border>
+
+                                    </DataTemplate>
+
+                                </ItemsControl.ItemTemplate>
+
+                            </ItemsControl>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </StackPanel>
+
+            </ScrollViewer>
+
+            <!-- PIE -->
+
+            <Border Grid.Row="2"
+                    Background="{StaticResource ColorPanelClaro}"
+                    BorderBrush="{StaticResource ColorBorde}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,16,16">
+
+                <Grid Margin="24,0">
+
+                    <TextBlock Text="Información del producto seleccionado"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                    <Button Content="Cerrar"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource BotonAceptar}"
+                            IsDefault="True"
+                            Click="BtnCerrar_Click"/>
+
+                </Grid>
+
+            </Border>
+
+        </Grid>
+
+    </Border>
+
+</Window>

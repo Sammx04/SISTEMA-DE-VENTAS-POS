@@ -1,0 +1,507 @@
+﻿<Window x:Class="ProySistemaVentas.Views.Dialogs.EtiquetaCodigoBarrasDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Imprimir etiqueta"
+        Width="720"
+        Height="560"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+
+        <SolidColorBrush x:Key="ColorPanel"
+                         Color="#0D1526"/>
+
+        <SolidColorBrush x:Key="ColorPanelClaro"
+                         Color="#13203A"/>
+
+        <SolidColorBrush x:Key="ColorBorde"
+                         Color="#24344F"/>
+
+        <SolidColorBrush x:Key="ColorTexto"
+                         Color="#FFFFFF"/>
+
+        <SolidColorBrush x:Key="ColorTextoSecundario"
+                         Color="#94A3B8"/>
+
+        <SolidColorBrush x:Key="ColorCyan"
+                         Color="#22D3EE"/>
+
+        <SolidColorBrush x:Key="ColorCyanClaro"
+                         Color="#67E8F9"/>
+
+        <!-- BOTÓN PRINCIPAL -->
+
+        <Style x:Key="BotonPrincipal"
+               TargetType="Button">
+
+            <Setter Property="Height"
+                    Value="44"/>
+
+            <Setter Property="MinWidth"
+                    Value="150"/>
+
+            <Setter Property="Padding"
+                    Value="25,0"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorCyan}"/>
+
+            <Setter Property="Foreground"
+                    Value="#07111D"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="9"
+                                Padding="{TemplateBinding Padding}">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="{StaticResource ColorCyanClaro}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.75"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- BOTÓN SECUNDARIO -->
+
+        <Style x:Key="BotonSecundario"
+               TargetType="Button">
+
+            <Setter Property="Height"
+                    Value="44"/>
+
+            <Setter Property="MinWidth"
+                    Value="120"/>
+
+            <Setter Property="Padding"
+                    Value="22,0"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorPanel}"/>
+
+            <Setter Property="Foreground"
+                    Value="#CBD5E1"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource ColorBorde}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9"
+                                Padding="{TemplateBinding Padding}">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource ColorCyan}"/>
+
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource ColorCyanClaro}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.75"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- BOTÓN CERRAR -->
+
+        <Style x:Key="BotonCerrar"
+               TargetType="Button">
+
+            <Setter Property="Width"
+                    Value="36"/>
+
+            <Setter Property="Height"
+                    Value="36"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTextoSecundario}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="FontSize"
+                    Value="14"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="#263650"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#FFFFFF"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+    </Window.Resources>
+
+    <Border Background="{StaticResource ColorPanel}"
+            BorderBrush="{StaticResource ColorBorde}"
+            BorderThickness="1"
+            CornerRadius="16">
+
+        <Border.Effect>
+
+            <DropShadowEffect Color="#000000"
+                              BlurRadius="28"
+                              ShadowDepth="5"
+                              Opacity="0.55"/>
+
+        </Border.Effect>
+
+        <Grid>
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="66"/>
+
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="78"/>
+
+            </Grid.RowDefinitions>
+
+            <!-- ENCABEZADO -->
+
+            <Border Grid.Row="0"
+                    Background="{StaticResource ColorPanelClaro}"
+                    BorderBrush="{StaticResource ColorBorde}"
+                    BorderThickness="0,0,0,1"
+                    CornerRadius="16,16,0,0"
+                    MouseLeftButtonDown="Encabezado_MouseLeftButtonDown">
+
+                <Grid Margin="22,0,15,0">
+
+                    <Grid.ColumnDefinitions>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                        <ColumnDefinition Width="*"/>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            Width="40"
+                            Height="40"
+                            CornerRadius="10"
+                            Background="#123047"
+                            BorderBrush="{StaticResource ColorCyan}"
+                            BorderThickness="1"
+                            VerticalAlignment="Center">
+
+                        <TextBlock Text="▥"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="21"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ColorCyan}"/>
+
+                    </Border>
+
+                    <StackPanel Grid.Column="1"
+                                Margin="13,0,0,0"
+                                VerticalAlignment="Center">
+
+                        <TextBlock Text="Vista previa de etiqueta"
+                                   FontSize="17"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource ColorTexto}"/>
+
+                        <TextBlock Text="Código de barras CODE128"
+                                   Margin="0,3,0,0"
+                                   FontSize="11"
+                                   Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Content="✕"
+                            Style="{StaticResource BotonCerrar}"
+                            VerticalAlignment="Center"
+                            Click="BtnCerrar_Click"/>
+
+                </Grid>
+
+            </Border>
+
+            <!-- CONTENIDO -->
+
+            <Grid Grid.Row="1"
+                  Margin="28,24">
+
+                <Grid.RowDefinitions>
+
+                    <RowDefinition Height="Auto"/>
+
+                    <RowDefinition Height="*"/>
+
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="La siguiente etiqueta será enviada a la impresora:"
+                           Margin="2,0,0,15"
+                           FontSize="12"
+                           Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                <!-- ETIQUETA QUE SE IMPRIMIRÁ -->
+
+                <Border x:Name="BordeEtiqueta"
+                        Grid.Row="1"
+                        Width="620"
+                        Height="330"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="White"
+                        BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="28">
+
+                    <Border.Effect>
+
+                        <DropShadowEffect Color="#000000"
+                                          BlurRadius="18"
+                                          ShadowDepth="3"
+                                          Opacity="0.25"/>
+
+                    </Border.Effect>
+
+                    <Grid>
+
+                        <Grid.RowDefinitions>
+
+                            <RowDefinition Height="Auto"/>
+
+                            <RowDefinition Height="128"/>
+
+                            <RowDefinition Height="Auto"/>
+
+                            <RowDefinition Height="Auto"/>
+
+                            <RowDefinition Height="Auto"/>
+
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="ETIQUETA DE PRODUCTO"
+                                   HorizontalAlignment="Center"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="#64748B"/>
+
+                        <!-- CÓDIGO DE BARRAS REAL -->
+
+                        <Canvas x:Name="CanvasCodigo"
+                                Grid.Row="1"
+                                Width="560"
+                                Height="115"
+                                Margin="0,12,0,0"
+                                HorizontalAlignment="Center"
+                                Background="White"/>
+
+                        <TextBlock x:Name="TxtCodigo"
+                                   Grid.Row="2"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,0"
+                                   FontFamily="Consolas"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#111827"/>
+
+                        <TextBlock x:Name="TxtProducto"
+                                   Grid.Row="3"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,13,0,0"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="#111827"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"/>
+
+                        <TextBlock x:Name="TxtVariante"
+                                   Grid.Row="4"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,6,0,0"
+                                   FontSize="13"
+                                   Foreground="#475569"
+                                   TextAlignment="Center"/>
+
+                    </Grid>
+
+                </Border>
+
+            </Grid>
+
+            <!-- PIE -->
+
+            <Border Grid.Row="2"
+                    Background="{StaticResource ColorPanelClaro}"
+                    BorderBrush="{StaticResource ColorBorde}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,16,16">
+
+                <Grid Margin="24,0">
+
+                    <TextBlock Text="La configuración de papel se seleccionará en la ventana de impresión."
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+
+                        <Button Content="Cerrar"
+                                Margin="0,0,10,0"
+                                Style="{StaticResource BotonSecundario}"
+                                IsCancel="True"
+                                Click="BtnCerrar_Click"/>
+
+                        <Button Content="🖨  Imprimir"
+                                Style="{StaticResource BotonPrincipal}"
+                                IsDefault="True"
+                                Click="BtnImprimir_Click"/>
+
+                    </StackPanel>
+
+                </Grid>
+
+            </Border>
+
+        </Grid>
+
+    </Border>
+
+</Window>

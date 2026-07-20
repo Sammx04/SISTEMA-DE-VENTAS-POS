@@ -161,7 +161,7 @@
                     Value="10,0"/>
 
             <Setter Property="Foreground"
-                    Value="{StaticResource ColorTexto}"/>
+                    Value="#111827"/>
 
             <Setter Property="Background"
                     Value="{StaticResource ColorPanelClaro}"/>
@@ -629,12 +629,15 @@
                                           Grid.Column="0"
                                           Style="{StaticResource ComboBoxModern}"
                                           DisplayMemberPath="Nombre"
-                                          SelectedValuePath="IdCategoria"/>
+                                          SelectedValuePath="IdCategoria"
+                                          SelectedIndex="0"
+                                          IsEditable="False"/>
 
                                 <Button Grid.Column="2"
                                         Content="+"
                                         Style="{StaticResource SecondaryButton}"
                                         Padding="0"
+                                        ToolTip="Crear Nueva Categoria"
                                         Click="BtnNuevaCategoria_Click"/>
 
                             </Grid>
@@ -675,34 +678,340 @@
                             </Grid>
 
                             <DataGrid x:Name="DgVariantes"
-                                      Height="205">
+          Height="205"
+          AutoGenerateColumns="False"
+          CanUserAddRows="False"
+          CanUserDeleteRows="False"
+          SelectionMode="Single"
+          HeadersVisibility="Column"
+          RowHeight="48"
+          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+          ScrollViewer.VerticalScrollBarVisibility="Auto">
 
                                 <DataGrid.Columns>
 
-                                    <DataGridTextColumn Header="Descripción"
-                                                        Width="*"
-                                                        Binding="{Binding Descripcion}"/>
+                                    <!-- DESCRIPCIÓN -->
 
-                                    <DataGridTextColumn Header="Código"
-                                                        Width="125"
-                                                        Binding="{Binding CodigoBarras}"/>
+                                    <!-- DESCRIPCIÓN -->
 
-                                    <DataGridTextColumn Header="Precio U."
-                                                        Width="90"
-                                                        Binding="{Binding PrecioUnidad}"/>
+                                    <DataGridTemplateColumn Header="Descripción"
+                        Width="180"
+                        MinWidth="160">
 
-                                    <DataGridTextColumn Header="Precio M."
-                                                        Width="90"
-                                                        Binding="{Binding PrecioMayor}"/>
+                                        <DataGridTemplateColumn.CellTemplate>
 
-                                    <DataGridTextColumn Header="Stock"
-                                                        Width="75"
-                                                        Binding="{Binding Stock}"/>
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding Descripcion,
+                                    Mode=TwoWay,
+                                    UpdateSourceTrigger=PropertyChanged}"
+                     Height="34"
+                     Margin="4"
+                     MinWidth="145"
+                     Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+                                    <!-- CÓDIGO DE BARRAS -->
+
+                                    <DataGridTemplateColumn Header="Código"
+                                Width="190">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <Grid Margin="4">
+
+                                                    <Grid.ColumnDefinitions>
+
+                                                        <ColumnDefinition Width="*"/>
+
+                                                        <ColumnDefinition Width="6"/>
+
+                                                        <ColumnDefinition Width="45"/>
+
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Grid Grid.Column="0">
+
+                                                        <TextBox x:Name="TxtCodigoVariante"
+                                     Text="{Binding CodigoBarras,
+                                                    Mode=TwoWay,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     Height="34"
+                                     IsReadOnly="True"
+                                     Style="{StaticResource TextBoxModern}"/>
+
+                                                        <!-- TEXTO MOSTRADO CUANDO NO HAY CÓDIGO -->
+
+                                                        <TextBlock Text="Se genera automáticamente"
+                                       Margin="12,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource ColorTextoSecundario}"
+                                       FontSize="11"
+                                       IsHitTestVisible="False">
+
+                                                            <TextBlock.Style>
+
+                                                                <Style TargetType="TextBlock">
+
+                                                                    <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+
+                                                                    <Style.Triggers>
+
+                                                                        <DataTrigger Binding="{Binding CodigoBarras}"
+                                                         Value="">
+
+                                                                            <Setter Property="Visibility"
+                                                        Value="Visible"/>
+
+                                                                        </DataTrigger>
+
+                                                                        <DataTrigger Binding="{Binding CodigoBarras}"
+                                                         Value="{x:Null}">
+
+                                                                            <Setter Property="Visibility"
+                                                        Value="Visible"/>
+
+                                                                        </DataTrigger>
+
+                                                                    </Style.Triggers>
+
+                                                                </Style>
+
+                                                            </TextBlock.Style>
+
+                                                        </TextBlock>
+
+                                                    </Grid>
+
+                                                    <Button Grid.Column="2"
+                                Content="Gen"
+                                Height="34"
+                                Padding="0"
+                                Tag="{Binding}"
+                                ToolTip="Generar código de barras"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="BtnGenerarCodigoVariante_Click"/>
+
+                                                </Grid>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+
+                                    <!-- PRECIO UNITARIO -->
+
+                                    <DataGridTemplateColumn Header="Precio U."
+                                Width="100">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding PrecioUnidad,
+                                            Mode=TwoWay,
+                                            UpdateSourceTrigger=PropertyChanged}"
+                             Height="34"
+                             Margin="4"
+                             HorizontalContentAlignment="Center"
+                             Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+
+                                    <!-- PRECIO MAYOR -->
+
+                                    <DataGridTemplateColumn Header="Precio M."
+                                Width="100">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding PrecioMayor,
+                                            Mode=TwoWay,
+                                            UpdateSourceTrigger=PropertyChanged}"
+                             Height="34"
+                             Margin="4"
+                             HorizontalContentAlignment="Center"
+                             Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+
+                                    <!-- STOCK -->
+
+                                    <!-- STOCK PARA PRODUCTO NUEVO -->
+
+                                    <DataGridTemplateColumn x:Name="ColStockInicial"
+                        Header="Stock"
+                        Width="90">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding Stock,
+                                    Mode=TwoWay,
+                                    UpdateSourceTrigger=PropertyChanged}"
+                     Height="34"
+                     Margin="4"
+                     HorizontalContentAlignment="Center"
+                     Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+
+                                    <!-- STOCK ACTUAL: SOLO CUANDO SE EDITA -->
+
+                                    <!-- STOCK ACTUAL: SOLO CUANDO SE EDITA -->
+
+                                    <DataGridTemplateColumn x:Name="ColStockActual"
+                        Header="Stock actual"
+                        Width="100"
+                        Visibility="Collapsed">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding StockActual, Mode=OneWay}"
+                     Height="34"
+                     Margin="4"
+                     IsReadOnly="True"
+                     IsTabStop="False"
+                     HorizontalContentAlignment="Center"
+                     Foreground="{StaticResource ColorTextoSecundario}"
+                     Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+                                    <!-- INGRESO -->
+
+                                    <DataGridTemplateColumn x:Name="ColIngreso"
+                        Header="+ Ingreso"
+                        Width="90"
+                        Visibility="Collapsed">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding Ingreso,
+                                    Mode=TwoWay,
+                                    UpdateSourceTrigger=PropertyChanged}"
+                     Height="34"
+                     Margin="4"
+                     HorizontalContentAlignment="Center"
+                     Foreground="{StaticResource ColorVerde}"
+                     Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+
+                                    <!-- SALIDA -->
+
+                                    <DataGridTemplateColumn x:Name="ColSalida"
+                        Header="- Salida"
+                        Width="90"
+                        Visibility="Collapsed">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding Salida,
+                                    Mode=TwoWay,
+                                    UpdateSourceTrigger=PropertyChanged}"
+                     Height="34"
+                     Margin="4"
+                     HorizontalContentAlignment="Center"
+                     Foreground="{StaticResource ColorRojo}"
+                     Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+
+                                    <!-- NUEVO STOCK -->
+
+                                    <DataGridTemplateColumn x:Name="ColNuevoStock"
+                        Header="Nuevo"
+                        Width="90"
+                        Visibility="Collapsed">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <TextBox Text="{Binding NuevoStock, Mode=OneWay}"
+         Height="34"
+         Margin="4"
+         IsReadOnly="True"
+         IsTabStop="False"
+         HorizontalContentAlignment="Center"
+         Foreground="{StaticResource ColorCyanClaro}"
+         Style="{StaticResource TextBoxModern}"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
+                                    <!-- ACCIÓN -->
+
+                                    <DataGridTemplateColumn Header="Acción"
+                                Width="75">
+
+                                        <DataGridTemplateColumn.CellTemplate>
+
+                                            <DataTemplate>
+
+                                                <Button Content="🗑"
+                            Width="38"
+                            Height="34"
+                            Padding="0"
+                            HorizontalAlignment="Center"
+                            Tag="{Binding}"
+                            ToolTip="Eliminar variante"
+                            Foreground="{StaticResource ColorRojo}"
+                            Style="{StaticResource SecondaryButton}"
+                            Click="BtnEliminarVariante_Click"/>
+
+                                            </DataTemplate>
+
+                                        </DataGridTemplateColumn.CellTemplate>
+
+                                    </DataGridTemplateColumn>
 
                                 </DataGrid.Columns>
 
                             </DataGrid>
-
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Left"
                                         Margin="0,22,0,0">
@@ -744,39 +1053,111 @@
                                            Margin="0,18,0,6"
                                            Foreground="{StaticResource ColorTextoClaro}"/>
 
-                                <ComboBox x:Name="CboVarianteCodigo"
-                                          Style="{StaticResource ComboBoxModern}"
-                                          SelectionChanged="CboVarianteCodigo_SelectionChanged"/>
+                                <!-- SELECTOR DE VARIANTE -->
 
-                                <Border Height="120"
-                                        Margin="0,18,0,16"
-                                        CornerRadius="12"
-                                        Background="{StaticResource ColorPanelClaro}"
-                                        BorderBrush="{StaticResource ColorBorde}"
-                                        BorderThickness="1">
+                                <Grid Margin="0,18,0,0">
 
-                                    <StackPanel HorizontalAlignment="Center"
-                                                VerticalAlignment="Center">
+                                    <ComboBox x:Name="CboVarianteCodigo"
+              Style="{StaticResource ComboBoxModern}"
+              DisplayMemberPath="Descripcion"
+              SelectionChanged="CboVarianteCodigo_SelectionChanged"/>
 
-                                        <TextBlock Text="|||| || ||||| ||| ||||"
-                                                   FontFamily="Consolas"
-                                                   FontSize="27"
-                                                   Foreground="{StaticResource ColorTexto}"/>
+                                    <!-- TEXTO MOSTRADO CUANDO NO HAY UNA VARIANTE SELECCIONADA -->
 
-                                        <TextBlock x:Name="TxtNumeroCodigo"
-                                                   Text="000000000"
-                                                   Margin="0,8,0,0"
-                                                   FontSize="13"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{StaticResource ColorTextoClaro}"/>
+                                    <TextBlock x:Name="TxtSeleccioneVarianteCodigo"
+               Text="Seleccione una variante"
+               Margin="13,0,40,0"
+               VerticalAlignment="Center"
+               Foreground="{StaticResource ColorTextoSecundario}"
+               FontSize="12"
+               IsHitTestVisible="False"/>
 
-                                    </StackPanel>
+                                </Grid>
 
-                                </Border>
+                                <!-- CONTENEDOR DEL CÓDIGO -->
 
-                                <Button Content="Imprimir etiquetas"
-                                        Style="{StaticResource PrimaryButton}"
-                                        Click="BtnImprimirEtiqueta_Click"/>
+                                <Grid Margin="0,18,0,16">
+
+                                    <!-- ESTADO VACÍO -->
+
+                                    <Border x:Name="PanelCodigoVacio"
+            Height="165"
+            CornerRadius="12"
+            Background="{StaticResource ColorPanelClaro}"
+            BorderBrush="{StaticResource ColorBorde}"
+            BorderThickness="1">
+
+                                        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+
+                                            <TextBlock Text="▥"
+                       FontSize="30"
+                       HorizontalAlignment="Center"
+                       Foreground="{StaticResource ColorTextoSecundario}"
+                       Opacity="0.35"/>
+
+                                            <TextBlock Text="Genere o seleccione un código de barras"
+                       Margin="0,12,0,0"
+                       FontSize="12"
+                       Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                        </StackPanel>
+
+                                    </Border>
+
+                                    <!-- ESTADO CON CÓDIGO GENERADO -->
+
+                                    <Border x:Name="PanelCodigoGenerado"
+            Height="165"
+            CornerRadius="12"
+            Background="{StaticResource ColorPanelClaro}"
+            BorderBrush="{StaticResource ColorBorde}"
+            BorderThickness="1"
+            Visibility="Collapsed">
+
+                                        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+
+                                            <!-- REPRESENTACIÓN VISUAL TEMPORAL -->
+
+                                            <TextBlock Text="|||| || ||||| ||| ||||"
+                       FontFamily="Consolas"
+                       FontSize="28"
+                       Foreground="{StaticResource ColorTexto}"
+                       HorizontalAlignment="Center"/>
+
+                                            <TextBlock x:Name="TxtNumeroCodigo"
+                       Margin="0,5,0,0"
+                       FontFamily="Consolas"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource ColorTexto}"
+                       HorizontalAlignment="Center"/>
+
+                                            <TextBlock x:Name="TxtProductoCodigo"
+                       Margin="0,10,0,0"
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource ColorTexto}"
+                       HorizontalAlignment="Center"/>
+
+                                            <TextBlock x:Name="TxtVarianteCodigo"
+                       Margin="0,3,0,0"
+                       FontSize="11"
+                       Foreground="{StaticResource ColorTextoClaro}"
+                       HorizontalAlignment="Center"/>
+
+                                        </StackPanel>
+
+                                    </Border>
+
+                                </Grid>
+
+                                <Button x:Name="BtnImprimirEtiqueta"
+        Content="Imprimir etiquetas"
+        Style="{StaticResource PrimaryButton}"
+        IsEnabled="False"
+        Click="BtnImprimirEtiquetas_Click"/>
 
                                 <TextBlock Text="Formato: CODE128"
                                            HorizontalAlignment="Center"
@@ -787,63 +1168,6 @@
                             </StackPanel>
 
                         </Border>
-
-                        <!-- MOVIMIENTO DE STOCK -->
-
-                        <Border x:Name="CardMovimientoStock"
-                                Margin="0,18,0,0"
-                                Style="{StaticResource CardStyle}">
-
-                            <StackPanel>
-
-                                <TextBlock Text="Movimiento de stock"
-                                           FontSize="16"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource ColorTexto}"/>
-
-                                <TextBlock Text="Stock actual"
-                                           Margin="0,18,0,6"
-                                           Foreground="{StaticResource ColorTextoClaro}"/>
-
-                                <TextBox x:Name="TxtStockActual"
-                                         IsReadOnly="True"
-                                         Style="{StaticResource TextBoxModern}"/>
-
-                                <TextBlock Text="+ Ingreso"
-                                           Margin="0,13,0,6"
-                                           Foreground="{StaticResource ColorVerde}"/>
-
-                                <TextBox x:Name="TxtIngreso"
-                                         Text="0"
-                                         Style="{StaticResource TextBoxModern}"
-                                         TextChanged="Stock_TextChanged"/>
-
-                                <TextBlock Text="- Salida"
-                                           Margin="0,13,0,6"
-                                           Foreground="{StaticResource ColorRojo}"/>
-
-                                <TextBox x:Name="TxtSalida"
-                                         Text="0"
-                                         Style="{StaticResource TextBoxModern}"
-                                         TextChanged="Stock_TextChanged"/>
-
-                                <TextBlock Text="Nuevo stock"
-                                           Margin="0,13,0,6"
-                                           Foreground="{StaticResource ColorCyanClaro}"/>
-
-                                <TextBox x:Name="TxtNuevoStock"
-                                         IsReadOnly="True"
-                                         Style="{StaticResource TextBoxModern}"/>
-
-                                <Button Content="Actualizar stock"
-                                        Margin="0,18,0,0"
-                                        Style="{StaticResource PrimaryButton}"
-                                        Click="BtnActualizarStock_Click"/>
-
-                            </StackPanel>
-
-                        </Border>
-
                     </StackPanel>
 
                 </Grid>
@@ -851,10 +1175,12 @@
                 <!-- ================= LISTADO ================= -->
 
                 <Border Grid.Row="1"
-                        Margin="0,20,0,20"
-                        Style="{StaticResource CardStyle}">
+        Margin="0,20,0,20"
+        Style="{StaticResource CardStyle}">
 
                     <StackPanel>
+
+                        <!-- ENCABEZADO -->
 
                         <Grid Margin="0,0,0,18">
 
@@ -862,84 +1188,467 @@
 
                                 <ColumnDefinition Width="*"/>
 
-                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="250"/>
 
                                 <ColumnDefinition Width="12"/>
 
-                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="190"/>
 
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0">
 
                                 <TextBlock Text="Lista de productos"
-                                           FontSize="17"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource ColorTexto}"/>
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource ColorTexto}"/>
 
                                 <TextBlock x:Name="TxtTotalProductos"
-                                           Text="0 productos"
-                                           Margin="0,4,0,0"
-                                           FontSize="12"
-                                           Foreground="{StaticResource ColorTextoSecundario}"/>
+                           Text="0 productos"
+                           Margin="0,4,0,0"
+                           FontSize="12"
+                           Foreground="{StaticResource ColorTextoSecundario}"/>
 
                             </StackPanel>
 
+                            <!-- BUSCADOR -->
+
                             <TextBox x:Name="TxtBuscarProducto"
-                                     Grid.Column="1"
-                                     Style="{StaticResource TextBoxModern}"
-                                     ToolTip="Buscar producto o código"
-                                     TextChanged="TxtBuscarProducto_TextChanged"/>
+                     Grid.Column="1"
+                     Style="{StaticResource TextBoxModern}"
+                     ToolTip="Buscar producto o código de barras"
+                     TextChanged="TxtBuscarProducto_TextChanged"/>
+
+                            <!-- FILTRO DE CATEGORÍA -->
 
                             <ComboBox x:Name="CboFiltroCategoria"
-                                      Grid.Column="3"
-                                      Style="{StaticResource ComboBoxModern}"
-                                      SelectionChanged="CboFiltroCategoria_SelectionChanged"/>
+                      Grid.Column="3"
+                      Style="{StaticResource ComboBoxModern}"
+                      DisplayMemberPath="Nombre"
+                      SelectedValuePath="IdCategoria"
+                      SelectionChanged="CboFiltroCategoria_SelectionChanged"/>
 
                         </Grid>
 
+                        <!-- INFORMACIÓN Y PAGINACIÓN -->
+
+                        <Grid Margin="0,0,0,12">
+
+                            <Grid.ColumnDefinitions>
+
+                                <ColumnDefinition Width="*"/>
+
+                                <ColumnDefinition Width="Auto"/>
+
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="TxtRangoProductos"
+                       Grid.Column="0"
+                       Text="No hay productos para mostrar"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal">
+
+                                <Button x:Name="BtnAnteriorPagina"
+                        Content="Anterior"
+                        Width="80"
+                        Height="34"
+                        Padding="0"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="BtnAnteriorPagina_Click"/>
+
+                                <StackPanel x:Name="PanelPaginas"
+                            Orientation="Horizontal"
+                            Margin="5,0"/>
+
+                                <Button x:Name="BtnSiguientePagina"
+                        Content="Siguiente"
+                        Width="82"
+                        Height="34"
+                        Padding="0"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="BtnSiguientePagina_Click"/>
+
+                            </StackPanel>
+
+                        </Grid>
+
+                        <!-- TABLA -->
+
                         <DataGrid x:Name="DgProductos"
-                                  MinHeight="280"
-                                  MouseDoubleClick="DgProductos_MouseDoubleClick">
+                  MinHeight="350"
+                  RowHeight="54"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  RowDetailsVisibilityMode="Collapsed"
+                  MouseDoubleClick="DgProductos_MouseDoubleClick">
+
+                            <DataGrid.RowDetailsTemplate>
+
+                                <DataTemplate>
+
+                                    <Border Margin="42,0,12,12"
+                Padding="16"
+                CornerRadius="10"
+                Background="{StaticResource ColorPanelClaro}"
+                BorderBrush="{StaticResource ColorBorde}"
+                BorderThickness="1">
+
+                                        <StackPanel>
+
+                                            <StackPanel Orientation="Horizontal"
+                            Margin="0,0,0,12">
+
+                                                <TextBlock Text="Variantes de"
+                               FontSize="13"
+                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                                <TextBlock Text="{Binding Nombre}"
+                               Margin="5,0,0,0"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ColorCyanClaro}"/>
+
+                                            </StackPanel>
+
+                                            <DataGrid ItemsSource="{Binding Variantes}"
+          AutoGenerateColumns="False"
+          CanUserAddRows="False"
+          CanUserDeleteRows="False"
+          IsReadOnly="True"
+          HeadersVisibility="Column"
+          RowHeight="44"
+          MinHeight="100"
+          MaxHeight="250"
+          Background="Transparent"
+          BorderThickness="0"
+          GridLinesVisibility="Horizontal"
+          HorizontalGridLinesBrush="{StaticResource ColorBorde}"
+          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+          ScrollViewer.VerticalScrollBarVisibility="Auto">
+
+                                                <DataGrid.Columns>
+
+                                                    <!-- DESCRIPCIÓN DE LA VARIANTE -->
+
+                                                    <DataGridTemplateColumn Header="Descripción"
+                                Width="180"
+                                MinWidth="150">
+
+                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                            <DataTemplate>
+
+                                                                <TextBlock Text="{Binding VarianteDescripcion}"
+                               Margin="10,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource ColorTexto}"/>
+
+                                                            </DataTemplate>
+
+                                                        </DataGridTemplateColumn.CellTemplate>
+
+                                                    </DataGridTemplateColumn>
+
+                                                    <!-- CÓDIGO DE BARRAS -->
+
+                                                    <DataGridTemplateColumn Header="Código de barras"
+                                Width="170"
+                                MinWidth="150">
+
+                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                            <DataTemplate>
+
+                                                                <TextBlock Text="{Binding CodigoBarras}"
+                               Margin="10,0"
+                               VerticalAlignment="Center"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               Foreground="{StaticResource ColorCyanClaro}"/>
+
+                                                            </DataTemplate>
+
+                                                        </DataGridTemplateColumn.CellTemplate>
+
+                                                    </DataGridTemplateColumn>
+
+                                                    <!-- PRECIO UNITARIO -->
+
+                                                    <DataGridTemplateColumn Header="Precio U."
+                                Width="110">
+
+                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                            <DataTemplate>
+
+                                                                <TextBlock Text="{Binding PrecioUnidad,
+                                             StringFormat={}{0:N2}}"
+                               Margin="10,0"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"
+                               Foreground="{StaticResource ColorTextoClaro}"/>
+
+                                                            </DataTemplate>
+
+                                                        </DataGridTemplateColumn.CellTemplate>
+
+                                                    </DataGridTemplateColumn>
+
+                                                    <!-- PRECIO MAYOR -->
+
+                                                    <DataGridTemplateColumn Header="Precio M."
+                                Width="110">
+
+                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                            <DataTemplate>
+
+                                                                <TextBlock Text="{Binding PrecioMayor,
+                                             StringFormat={}{0:N2}}"
+                               Margin="10,0"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"
+                               Foreground="{StaticResource ColorTextoClaro}"/>
+
+                                                            </DataTemplate>
+
+                                                        </DataGridTemplateColumn.CellTemplate>
+
+                                                    </DataGridTemplateColumn>
+
+                                                    <!-- STOCK EN ALMACÉN -->
+
+                                                    <DataGridTemplateColumn Header="Almacén"
+                                Width="100">
+
+                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                            <DataTemplate>
+
+                                                                <TextBlock Text="{Binding StockAlmacen}"
+                               Margin="10,0"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Foreground="{StaticResource ColorTextoClaro}"/>
+
+                                                            </DataTemplate>
+
+                                                        </DataGridTemplateColumn.CellTemplate>
+
+                                                    </DataGridTemplateColumn>
+
+                                                    <!-- STOCK EN TIENDA -->
+
+                                                    <DataGridTemplateColumn Header="Tienda"
+                                Width="90">
+
+                                                        <DataGridTemplateColumn.CellTemplate>
+
+                                                            <DataTemplate>
+
+                                                                <TextBlock Text="{Binding StockTienda}"
+                               Margin="10,0"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Foreground="{StaticResource ColorTextoClaro}"/>
+
+                                                            </DataTemplate>
+
+                                                        </DataGridTemplateColumn.CellTemplate>
+
+                                                    </DataGridTemplateColumn>
+
+                                                </DataGrid.Columns>
+
+                                            </DataGrid>
+
+                                        </StackPanel>
+
+                                    </Border>
+
+                                </DataTemplate>
+
+                            </DataGrid.RowDetailsTemplate>
 
                             <DataGrid.Columns>
 
-                                <DataGridTextColumn Header="Código"
-                                                    Width="100"
-                                                    Binding="{Binding CodigoBase}"/>
+                                <!-- VER DETALLE -->
 
-                                <DataGridTextColumn Header="Producto"
-                                                    Width="*"
-                                                    Binding="{Binding Nombre}"/>
+                                <DataGridTemplateColumn Header=""
+                                        Width="42">
+
+                                    <DataGridTemplateColumn.CellTemplate>
+
+                                        <DataTemplate>
+
+                                            <Button Content="›"
+        Width="30"
+        Height="30"
+        Padding="0"
+        FontSize="18"
+        Tag="{Binding}"
+        ToolTip="Mostrar variantes"
+        Click="BtnDesplegarVariantes_Click">
+
+                                                <Button.Style>
+
+                                                    <Style TargetType="Button"
+               BasedOn="{StaticResource SecondaryButton}">
+
+                                                        <Setter Property="Visibility"
+                    Value="Visible"/>
+
+                                                        <Style.Triggers>
+
+                                                            <DataTrigger Binding="{Binding TieneVariantes}"
+                             Value="False">
+
+                                                                <Setter Property="Visibility"
+                            Value="Collapsed"/>
+
+                                                            </DataTrigger>
+
+                                                        </Style.Triggers>
+
+                                                    </Style>
+
+                                                </Button.Style>
+
+                                            </Button>
+
+                                        </DataTemplate>
+
+                                    </DataGridTemplateColumn.CellTemplate>
+
+                                </DataGridTemplateColumn>
+
+                                <!-- PRODUCTO -->
+
+                                <DataGridTemplateColumn Header="Producto"
+                                        Width="*">
+
+                                    <DataGridTemplateColumn.CellTemplate>
+
+                                        <DataTemplate>
+
+                                            <StackPanel VerticalAlignment="Center">
+
+                                                <TextBlock Text="{Binding Nombre}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource ColorTexto}"/>
+
+                                                <TextBlock Text="{Binding Descripcion}"
+                                           Margin="0,3,0,0"
+                                           FontSize="11"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                            </StackPanel>
+
+                                        </DataTemplate>
+
+                                    </DataGridTemplateColumn.CellTemplate>
+
+                                </DataGridTemplateColumn>
+
+                                <!-- CATEGORÍA -->
 
                                 <DataGridTextColumn Header="Categoría"
-                                                    Width="150"
-                                                    Binding="{Binding NombreCategoria}"/>
+                                    Width="145"
+                                    Binding="{Binding NombreCategoria}"/>
 
-                                <DataGridTextColumn Header="Variante"
-                                                    Width="130"
-                                                    Binding="{Binding VarianteDescripcion}"/>
+                                <!-- PRECIO UNITARIO -->
 
-                                <DataGridTextColumn Header="Precio U."
-                                                    Width="90"
-                                                    Binding="{Binding PrecioUnidad}"/>
+                                <DataGridTextColumn Header="Precio unidad"
+                                    Width="110"
+                                    Binding="{Binding PrecioUnidadTexto}"/>
 
-                                <DataGridTextColumn Header="Precio M."
-                                                    Width="90"
-                                                    Binding="{Binding PrecioMayor}"/>
+                                <!-- PRECIO MAYOR -->
 
-                                <DataGridTextColumn Header="Almacén"
-                                                    Width="85"
-                                                    Binding="{Binding StockAlmacen}"/>
+                                <DataGridTextColumn Header="Precio mayor"
+                                    Width="110"
+                                    Binding="{Binding PrecioMayorTexto}"/>
 
-                                <DataGridTextColumn Header="Tienda"
-                                                    Width="75"
-                                                    Binding="{Binding StockTienda}"/>
+                                <!-- STOCK -->
+
+                                <DataGridTextColumn Header="Stock"
+                                    Width="80"
+                                    Binding="{Binding StockTotal}"/>
+
+                                <!-- CÓDIGO -->
 
                                 <DataGridTextColumn Header="Código de barras"
-                                                    Width="140"
-                                                    Binding="{Binding CodigoBarras}"/>
+                                    Width="145"
+                                    Binding="{Binding CodigoBarrasTexto}"/>
 
+                                <!-- ACCIONES -->
+
+                                <DataGridTemplateColumn Header="Acciones"
+                        Width="185">
+
+                                    <DataGridTemplateColumn.CellTemplate>
+
+                                        <DataTemplate>
+
+                                            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+
+                                                <!-- VER DETALLE -->
+
+                                                <Button Content="👁"
+                        Width="34"
+                        Height="30"
+                        Padding="0"
+                        Margin="0,0,5,0"
+                        Foreground="{StaticResource ColorCyan}"
+                        Tag="{Binding}"
+                        ToolTip="Ver detalle del producto"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="BtnVerProducto_Click"/>
+
+                                                <!-- EDITAR -->
+
+                                                <Button Content="✎"
+                        Width="34"
+                        Height="30"
+                        Padding="0"
+                        Margin="0,0,5,0"
+                        Foreground="{StaticResource ColorAmarillo}"
+                        Tag="{Binding}"
+                        ToolTip="Editar producto"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="BtnEditarProducto_Click"/>
+
+                                                <!-- ELIMINAR -->
+
+                                                <Button Content="🗑"
+                        Width="34"
+                        Height="30"
+                        Padding="0"
+                        Foreground="{StaticResource ColorRojo}"
+                        Tag="{Binding}"
+                        ToolTip="Eliminar producto"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="BtnEliminarProducto_Click"/>
+
+                                            </StackPanel>
+
+                                        </DataTemplate>
+
+                                    </DataGridTemplateColumn.CellTemplate>
+
+                                </DataGridTemplateColumn>
                             </DataGrid.Columns>
 
                         </DataGrid>

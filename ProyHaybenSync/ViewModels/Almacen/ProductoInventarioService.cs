@@ -116,43 +116,46 @@ namespace ProySistemaVentas.Services.Almacen
             cmd.CommandType =
                 CommandType.StoredProcedure;
 
-            cmd.Parameters.AddWithValue(
+            cmd.Parameters.Add(
                 "@IdProducto",
-                idProducto);
+                SqlDbType.Int).Value =
+                idProducto;
 
-            cmd.Parameters.AddWithValue(
+            cmd.Parameters.Add(
                 "@Nombre",
-                nombre);
+                SqlDbType.NVarChar,
+                150).Value =
+                nombre;
 
-            cmd.Parameters.AddWithValue(
+            cmd.Parameters.Add(
                 "@IdCategoria",
-                idCategoria);
+                SqlDbType.Int).Value =
+                idCategoria;
 
-            cmd.Parameters.AddWithValue(
+            cmd.Parameters.Add(
                 "@Descripcion",
-                descripcion);
+                SqlDbType.NVarChar,
+                300).Value =
+                string.IsNullOrWhiteSpace(descripcion)
+                    ? DBNull.Value
+                    : descripcion;
 
-            cmd.Parameters.AddWithValue(
-                "@TieneVariantes",
-                tieneVariantes);
-
-            DataTable tablaVariantes =
-                ConvertirVariantesADataTable(variantes);
-
-            SqlParameter parametroVariantes =
-                cmd.Parameters.AddWithValue(
-                    "@Variantes",
-                    tablaVariantes);
-
-            parametroVariantes.SqlDbType =
-                SqlDbType.Structured;
-
-            parametroVariantes.TypeName =
-                "dbo.TipoVariante";
+            /*
+             * El procedimiento almacenado actual no recibe:
+             *
+             * @TieneVariantes
+             * @Variantes
+             *
+             * Por eso no se agregan al SqlCommand.
+             */
 
             cn.Open();
 
-            return cmd.ExecuteNonQuery() > 0;
+            object resultado =
+                cmd.ExecuteScalar();
+
+            return resultado != null &&
+                   Convert.ToInt32(resultado) == 1;
         }
 
         private DataTable ConvertirVariantesADataTable(List<TipoVariante> variantes)
@@ -174,6 +177,231 @@ namespace ProySistemaVentas.Services.Almacen
             }
 
             return tabla;
+        }
+
+        public bool EditarVariante(
+    TipoVariante variante)
+        {
+            if (variante == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(variante));
+            }
+
+            using SqlConnection cn =
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
+
+            using SqlCommand cmd =
+                new SqlCommand(
+                    "sp_EditarVariante",
+                    cn);
+
+            cmd.CommandType =
+                CommandType.StoredProcedure;
+
+            cmd.Parameters.Add(
+                "@IdVariante",
+                SqlDbType.Int).Value =
+                variante.IdVariante;
+
+            cmd.Parameters.Add(
+                "@Descripcion",
+                SqlDbType.NVarChar,
+                100).Value =
+                string.IsNullOrWhiteSpace(
+                    variante.Descripcion)
+                        ? "Única"
+                        : variante.Descripcion.Trim();
+
+            SqlParameter precioUnidad =
+                cmd.Parameters.Add(
+                    "@PrecioUnidad",
+                    SqlDbType.Decimal);
+
+            precioUnidad.Precision = 10;
+            precioUnidad.Scale = 2;
+            precioUnidad.Value =
+                variante.PrecioUnidad;
+
+            SqlParameter precioMayor =
+                cmd.Parameters.Add(
+                    "@PrecioMayor",
+                    SqlDbType.Decimal);
+
+            precioMayor.Precision = 10;
+            precioMayor.Scale = 2;
+            precioMayor.Value =
+                variante.PrecioMayor;
+
+            cn.Open();
+
+            object resultado =
+                cmd.ExecuteScalar();
+
+            return resultado != null &&
+                   Convert.ToInt32(resultado) > 0;
+        }
+
+        public (int IdVariante, string CodigoBarras)
+    AgregarVarianteAProducto(
+        int idProducto,
+        TipoVariante variante)
+        {
+            if (variante == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(variante));
+            }
+
+            using SqlConnection cn =
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
+
+            using SqlCommand cmd =
+                new SqlCommand(
+                    "sp_AgregarVarianteAProducto",
+                    cn);
+
+            cmd.CommandType =
+                CommandType.StoredProcedure;
+
+            cmd.Parameters.Add(
+                "@IdProducto",
+                SqlDbType.Int).Value =
+                idProducto;
+
+            cmd.Parameters.Add(
+                "@Descripcion",
+                SqlDbType.NVarChar,
+                100).Value =
+                string.IsNullOrWhiteSpace(
+                    variante.Descripcion)
+                        ? "Única"
+                        : variante.Descripcion.Trim();
+
+            SqlParameter precioUnidad =
+                cmd.Parameters.Add(
+                    "@PrecioUnidad",
+                    SqlDbType.Decimal);
+
+            precioUnidad.Precision = 10;
+            precioUnidad.Scale = 2;
+            precioUnidad.Value =
+                variante.PrecioUnidad;
+
+            SqlParameter precioMayor =
+                cmd.Parameters.Add(
+                    "@PrecioMayor",
+                    SqlDbType.Decimal);
+
+            precioMayor.Precision = 10;
+            precioMayor.Scale = 2;
+            precioMayor.Value =
+                variante.PrecioMayor;
+
+            // El procedimiento recibe @Stock.
+            cmd.Parameters.Add(
+                "@Stock",
+                SqlDbType.Int).Value =
+                variante.NuevoStock;
+
+            cn.Open();
+
+            using SqlDataReader reader =
+                cmd.ExecuteReader();
+
+            if (!reader.Read())
+            {
+                return (0, string.Empty);
+            }
+
+            int idVariante =
+                Convert.ToInt32(
+                    reader["IdVariante"]);
+
+            string codigoBarras =
+                Convert.ToString(
+                    reader["CodigoBarras"])?.Trim()
+                ?? string.Empty;
+
+            return (
+                idVariante,
+                codigoBarras);
+        }
+
+        public bool EliminarVariante(
+    int idVariante)
+        {
+            if (idVariante <= 0)
+            {
+                throw new ArgumentException(
+                    "El identificador de la variante no es válido.",
+                    nameof(idVariante));
+            }
+
+            using SqlConnection cn =
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
+
+            using SqlCommand cmd =
+                new SqlCommand(
+                    "sp_EliminarVariante",
+                    cn);
+
+            cmd.CommandType =
+                CommandType.StoredProcedure;
+
+            cmd.Parameters.Add(
+                "@IdVariante",
+                SqlDbType.Int).Value =
+                idVariante;
+
+            cn.Open();
+
+            object resultado =
+                cmd.ExecuteScalar();
+
+            return resultado != null &&
+                   resultado != DBNull.Value &&
+                   Convert.ToInt32(resultado) == 1;
+        }
+
+        public bool DesactivarProductoInventario(
+    int idProducto)
+        {
+            if (idProducto <= 0)
+            {
+                throw new ArgumentException(
+                    "El identificador del producto no es válido.",
+                    nameof(idProducto));
+            }
+
+            using SqlConnection cn =
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
+
+            using SqlCommand cmd =
+                new SqlCommand(
+                    "sp_DesactivarProductoInventario",
+                    cn);
+
+            cmd.CommandType =
+                CommandType.StoredProcedure;
+
+            cmd.Parameters.Add(
+                "@IdProducto",
+                SqlDbType.Int).Value =
+                idProducto;
+
+            cn.Open();
+
+            object resultado =
+                cmd.ExecuteScalar();
+
+            return resultado != null &&
+                   resultado != DBNull.Value &&
+                   Convert.ToInt32(resultado) == 1;
         }
     }
 }
