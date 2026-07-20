@@ -97,23 +97,58 @@ namespace ProySistemaVentas.Services.Almacen
         }
 
         public bool EditarProductoInventario(
-            int idProducto,
-            string nombre,
-            int idCategoria,
-            string descripcion)
+    int idProducto,
+    string nombre,
+    int idCategoria,
+    string descripcion,
+    bool tieneVariantes,
+    List<TipoVariante> variantes)
         {
             using SqlConnection cn =
-                new SqlConnection(ConexionService.ObtenerCadenaConexion());
+                new SqlConnection(
+                    ConexionService.ObtenerCadenaConexion());
 
             using SqlCommand cmd =
-                new SqlCommand("sp_EditarProductoInventario", cn);
+                new SqlCommand(
+                    "sp_EditarProductoInventario",
+                    cn);
 
-            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandType =
+                CommandType.StoredProcedure;
 
-            cmd.Parameters.AddWithValue("@IdProducto", idProducto);
-            cmd.Parameters.AddWithValue("@Nombre", nombre);
-            cmd.Parameters.AddWithValue("@IdCategoria", idCategoria);
-            cmd.Parameters.AddWithValue("@Descripcion", descripcion);
+            cmd.Parameters.AddWithValue(
+                "@IdProducto",
+                idProducto);
+
+            cmd.Parameters.AddWithValue(
+                "@Nombre",
+                nombre);
+
+            cmd.Parameters.AddWithValue(
+                "@IdCategoria",
+                idCategoria);
+
+            cmd.Parameters.AddWithValue(
+                "@Descripcion",
+                descripcion);
+
+            cmd.Parameters.AddWithValue(
+                "@TieneVariantes",
+                tieneVariantes);
+
+            DataTable tablaVariantes =
+                ConvertirVariantesADataTable(variantes);
+
+            SqlParameter parametroVariantes =
+                cmd.Parameters.AddWithValue(
+                    "@Variantes",
+                    tablaVariantes);
+
+            parametroVariantes.SqlDbType =
+                SqlDbType.Structured;
+
+            parametroVariantes.TypeName =
+                "dbo.TipoVariante";
 
             cn.Open();
 

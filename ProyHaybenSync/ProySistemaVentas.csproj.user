@@ -14,11 +14,19 @@
     <Compile Update="Views\RegistroUsuarioView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\UserControls\AlmacenControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\UserControls\UsuariosControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UsuariosView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\UserControls\AlmacenControl.xaml">
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
 </Project>

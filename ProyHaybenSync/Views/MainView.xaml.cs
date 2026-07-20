@@ -32,5 +32,12 @@ namespace ProySistemaVentas.Views
             ContenidoPrincipal.Content =
                 new UsuariosControl();
         }
+
+        private void BtnAlmacen_Click(object sender,RoutedEventArgs e)
+        {
+            ContenidoPrincipal.Content = new AlmacenControl();
+        }
+
+
     }
 }

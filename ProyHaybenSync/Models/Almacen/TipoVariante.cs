@@ -10,6 +10,8 @@ namespace ProySistemaVentas.Models.Almacen
     {
         public string Descripcion { get; set; }
 
+        public string CodigoBarras { get; set; }
+
         public decimal PrecioUnidad { get; set; }
 
         public decimal PrecioMayor { get; set; }
