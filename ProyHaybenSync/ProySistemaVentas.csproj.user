@@ -5,7 +5,13 @@
     <Compile Update="Views\Dialogs\DetalleProductoDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\Dialogs\EditarItemVentaDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\Dialogs\EtiquetaCodigoBarrasDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Dialogs\MensajeDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\Dialogs\MensajeExitoDialog.xaml.cs">
@@ -15,6 +21,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\Dialogs\TransferenciaStockDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Dialogs\VentaCompletadaDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\EditarUsuarioView.xaml.cs">
@@ -36,6 +45,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UserControls\UsuariosControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\UserControls\VentaPOSControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UsuariosView.xaml.cs">
