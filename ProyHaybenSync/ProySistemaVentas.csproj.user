@@ -14,6 +14,9 @@
     <Compile Update="Views\Dialogs\NuevaCategoriaDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\Dialogs\TransferenciaStockDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\EditarUsuarioView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -27,6 +30,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UserControls\AlmacenControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\UserControls\InventarioTiendaControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UserControls\UsuariosControl.xaml.cs">
