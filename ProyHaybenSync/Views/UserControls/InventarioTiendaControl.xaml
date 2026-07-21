@@ -1,12 +1,1575 @@
-﻿<Window x:Class="ProySistemaVentas.Views.UserControls.InventarioTiendaControl"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ProySistemaVentas.Views.UserControls"
-        mc:Ignorable="d"
-        Title="InventarioTiendaControl" Height="450" Width="800">
-    <Grid>
-        
+﻿<UserControl x:Class="ProySistemaVentas.Views.UserControls.InventarioTiendaControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="900"
+             d:DesignWidth="1350"
+             Background="#0B1120">
+
+    <UserControl.Resources>
+
+        <!-- ================================================= -->
+        <!-- CONVERSORES -->
+        <!-- ================================================= -->
+
+        <BooleanToVisibilityConverter
+            x:Key="BooleanToVisibilityConverter"/>
+
+        <!-- ================================================= -->
+        <!-- COLORES -->
+        <!-- ================================================= -->
+
+        <SolidColorBrush x:Key="ColorFondo"
+                         Color="#0B1120"/>
+
+        <SolidColorBrush x:Key="ColorPanel"
+                         Color="#0D1526"/>
+
+        <SolidColorBrush x:Key="ColorPanelClaro"
+                         Color="#13203A"/>
+
+        <SolidColorBrush x:Key="ColorPanelSecundario"
+                         Color="#101B31"/>
+
+        <SolidColorBrush x:Key="ColorPanelHover"
+                         Color="#16243E"/>
+
+        <SolidColorBrush x:Key="ColorBorde"
+                         Color="#24344F"/>
+
+        <SolidColorBrush x:Key="ColorTexto"
+                         Color="#FFFFFF"/>
+
+        <SolidColorBrush x:Key="ColorTextoSecundario"
+                         Color="#94A3B8"/>
+
+        <SolidColorBrush x:Key="ColorTextoOscuro"
+                         Color="#07111D"/>
+
+        <SolidColorBrush x:Key="ColorCyan"
+                         Color="#22D3EE"/>
+
+        <SolidColorBrush x:Key="ColorCyanClaro"
+                         Color="#67E8F9"/>
+
+        <SolidColorBrush x:Key="ColorVerde"
+                         Color="#22C55E"/>
+
+        <SolidColorBrush x:Key="ColorAmarillo"
+                         Color="#F59E0B"/>
+
+        <SolidColorBrush x:Key="ColorRojo"
+                         Color="#EF4444"/>
+
+        <!-- ================================================= -->
+        <!-- SOMBRA DE TARJETAS -->
+        <!-- ================================================= -->
+
+        <DropShadowEffect x:Key="SombraTarjeta"
+                          Color="#000000"
+                          BlurRadius="18"
+                          ShadowDepth="3"
+                          Opacity="0.30"/>
+
+        <!-- ================================================= -->
+        <!-- TARJETA PRINCIPAL -->
+        <!-- ================================================= -->
+
+        <Style x:Key="TarjetaSeccion"
+               TargetType="Border">
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorPanel}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource ColorBorde}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="CornerRadius"
+                    Value="15"/>
+
+            <Setter Property="Padding"
+                    Value="23"/>
+
+            <Setter Property="Effect"
+                    Value="{StaticResource SombraTarjeta}"/>
+
+        </Style>
+
+        <!-- ================================================= -->
+        <!-- TEXTBOX DE BÚSQUEDA -->
+        <!-- ================================================= -->
+
+        <Style x:Key="TextBoxFiltro"
+               TargetType="TextBox">
+
+            <Setter Property="Height"
+                    Value="44"/>
+
+            <Setter Property="Padding"
+                    Value="42,0,13,0"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorPanelSecundario}"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTexto}"/>
+
+            <Setter Property="CaretBrush"
+                    Value="{StaticResource ColorCyan}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource ColorBorde}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="SelectionBrush"
+                    Value="{StaticResource ColorCyan}"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="TextBox">
+
+                        <Border x:Name="BordeCampo"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsKeyboardFocused"
+                                     Value="True">
+
+                                <Setter TargetName="BordeCampo"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource ColorCyan}"/>
+
+                                <Setter TargetName="BordeCampo"
+                                        Property="Background"
+                                        Value="#132039"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- ================================================= -->
+        <!-- COMBOBOX DE FILTROS -->
+        <!-- ================================================= -->
+
+        <Style x:Key="ComboBoxFiltro"
+               TargetType="ComboBox">
+
+            <Setter Property="Height"
+                    Value="44"/>
+
+            <Setter Property="Padding"
+                    Value="12,0"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorPanelSecundario}"/>
+
+            <Setter Property="Foreground"
+                    Value="#111827"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource ColorBorde}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+        </Style>
+
+        <Style TargetType="ComboBoxItem">
+
+            <Setter Property="Padding"
+                    Value="12,9"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorPanelClaro}"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTexto}"/>
+
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Stretch"/>
+
+            <Style.Triggers>
+
+                <Trigger Property="IsHighlighted"
+                         Value="True">
+
+                    <Setter Property="Background"
+                            Value="#1C3652"/>
+
+                    <Setter Property="Foreground"
+                            Value="{StaticResource ColorCyanClaro}"/>
+
+                </Trigger>
+
+                <Trigger Property="IsSelected"
+                         Value="True">
+
+                    <Setter Property="Background"
+                            Value="#164E63"/>
+
+                    <Setter Property="Foreground"
+                            Value="White"/>
+
+                </Trigger>
+
+            </Style.Triggers>
+
+        </Style>
+
+        <!-- ================================================= -->
+        <!-- BOTÓN TRANSFERENCIA -->
+        <!-- ================================================= -->
+
+        <Style x:Key="BotonTransferencia"
+               TargetType="Button">
+
+            <Setter Property="Width"
+                    Value="42"/>
+
+            <Setter Property="Height"
+                    Value="42"/>
+
+            <Setter Property="Padding"
+                    Value="0"/>
+
+            <Setter Property="Background"
+                    Value="#123047"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorCyan}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="#1D5369"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="21"/>
+
+            <Setter Property="FontWeight"
+                    Value="Bold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="ToolTip"
+                    Value="Transferir stock a tienda"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="11">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="{StaticResource ColorCyan}"/>
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource ColorCyanClaro}"/>
+
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource ColorTextoOscuro}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.72"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="#1E293B"/>
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="BorderBrush"
+                                        Value="#334155"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#475569"/>
+
+                                <Setter Property="Cursor"
+                                        Value="Arrow"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- ================================================= -->
+        <!-- BOTÓN VARIANTES -->
+        <!-- ================================================= -->
+
+        <Style x:Key="BotonVariantes"
+               TargetType="Button">
+
+            <Setter Property="Height"
+                    Value="38"/>
+
+            <Setter Property="Padding"
+                    Value="14,0"/>
+
+            <Setter Property="Background"
+                    Value="#172A44"/>
+
+            <Setter Property="Foreground"
+                    Value="#CBD5E1"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource ColorBorde}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="12"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="#1C3652"/>
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource ColorCyan}"/>
+
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource ColorCyanClaro}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.72"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- ================================================= -->
+        <!-- BOTONES DE PAGINACIÓN -->
+        <!-- ================================================= -->
+
+        <Style x:Key="BotonPagina"
+               TargetType="Button">
+
+            <Setter Property="MinWidth"
+                    Value="38"/>
+
+            <Setter Property="Height"
+                    Value="38"/>
+
+            <Setter Property="Margin"
+                    Value="3,0"/>
+
+            <Setter Property="Padding"
+                    Value="10,0"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource ColorPanelClaro}"/>
+
+            <Setter Property="Foreground"
+                    Value="#CBD5E1"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource ColorBorde}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="12"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordePagina"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9"
+                                Padding="{TemplateBinding Padding}">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordePagina"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource ColorCyan}"/>
+
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource ColorCyanClaro}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordePagina"
+                                        Property="Opacity"
+                                        Value="0.72"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+
+                                <Setter TargetName="BordePagina"
+                                        Property="Background"
+                                        Value="#111827"/>
+
+                                <Setter TargetName="BordePagina"
+                                        Property="BorderBrush"
+                                        Value="#1E293B"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#475569"/>
+
+                                <Setter Property="Cursor"
+                                        Value="Arrow"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- ================================================= -->
+        <!-- SCROLLBAR -->
+        <!-- ================================================= -->
+
+        <Style TargetType="ScrollBar">
+
+            <Setter Property="Width"
+                    Value="10"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- ===================================================== -->
+    <!-- CONTENIDO PRINCIPAL -->
+    <!-- ===================================================== -->
+
+    <Grid Background="{StaticResource ColorFondo}">
+
+        <Grid.RowDefinitions>
+
+            <RowDefinition Height="Auto"/>
+
+            <RowDefinition Height="*"/>
+
+        </Grid.RowDefinitions>
+
+        <!-- ================================================= -->
+        <!-- ENCABEZADO -->
+        <!-- ================================================= -->
+
+        <Grid Grid.Row="0"
+              Margin="28,23,28,18">
+
+            <Grid.ColumnDefinitions>
+
+                <ColumnDefinition Width="Auto"/>
+
+                <ColumnDefinition Width="*"/>
+
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Width="52"
+                    Height="52"
+                    Background="#123047"
+                    BorderBrush="{StaticResource ColorCyan}"
+                    BorderThickness="1"
+                    CornerRadius="14"
+                    VerticalAlignment="Center">
+
+                <TextBlock Text="▦"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="25"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource ColorCyan}"/>
+
+            </Border>
+
+            <StackPanel Grid.Column="1"
+                        Margin="15,0,0,0"
+                        VerticalAlignment="Center">
+
+                <TextBlock Text="Inventario / Tienda"
+                           FontSize="25"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource ColorTexto}"/>
+
+                <TextBlock Text="Gestión de stock en punto de venta y transferencias desde almacén"
+                           Margin="0,5,0,0"
+                           FontSize="13"
+                           Foreground="{StaticResource ColorTextoSecundario}"/>
+
+            </StackPanel>
+
+        </Grid>
+
+        <!-- ================================================= -->
+        <!-- CUERPO -->
+        <!-- ================================================= -->
+
+        <Grid Grid.Row="1"
+              Margin="28,0,28,24">
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="Auto"/>
+
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Style="{StaticResource TarjetaSeccion}">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+
+                        <RowDefinition Height="Auto"/>
+
+                        <RowDefinition Height="Auto"/>
+
+                        <RowDefinition Height="*"/>
+
+                    </Grid.RowDefinitions>
+
+                    <!-- ===================================== -->
+                    <!-- TÍTULO DEL LISTADO -->
+                    <!-- ===================================== -->
+
+                    <Grid Grid.Row="0"
+                          Margin="0,0,0,20">
+
+                        <Grid.ColumnDefinitions>
+
+                            <ColumnDefinition Width="*"/>
+
+                            <ColumnDefinition Width="Auto"/>
+
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+
+                            <TextBlock Text="Productos en tienda"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource ColorTexto}"/>
+
+                            <TextBlock Text="Consulte el stock disponible y transfiera productos desde almacén"
+                                       Margin="0,5,0,0"
+                                       FontSize="12"
+                                       Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                        </StackPanel>
+
+                        <Border Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Padding="14,7"
+                                Background="#123047"
+                                BorderBrush="#1D5369"
+                                BorderThickness="1"
+                                CornerRadius="18">
+
+                            <TextBlock x:Name="TxtTotalProductos"
+                                       Text="0 productos"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource ColorCyanClaro}"/>
+
+                        </Border>
+
+                    </Grid>
+
+                    <!-- ===================================== -->
+                    <!-- FILTROS -->
+                    <!-- ===================================== -->
+
+                    <Grid Grid.Row="1"
+                          Margin="0,0,0,22">
+
+                        <Grid.ColumnDefinitions>
+
+                            <ColumnDefinition Width="2*"/>
+
+                            <ColumnDefinition Width="14"/>
+
+                            <ColumnDefinition Width="*"/>
+
+                            <ColumnDefinition Width="14"/>
+
+                            <ColumnDefinition Width="*"/>
+
+                        </Grid.ColumnDefinitions>
+
+                        <!-- BUSCADOR -->
+
+                        <Grid Grid.Column="0">
+
+                            <TextBox x:Name="TxtBuscarProducto"
+                                     Style="{StaticResource TextBoxFiltro}"
+                                     ToolTip="Buscar por producto, variante, categoría o código de barras"
+                                     TextChanged="TxtBuscarProducto_TextChanged"/>
+
+                            <TextBlock Text="⌕"
+                                       Margin="15,0,0,0"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"
+                                       FontSize="21"
+                                       Foreground="{StaticResource ColorTextoSecundario}"
+                                       IsHitTestVisible="False"/>
+
+                            <TextBlock x:Name="TxtPlaceholderBusqueda"
+                                       Text="Buscar producto o código de barras..."
+                                       Margin="43,0,0,0"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="#64748B"
+                                       IsHitTestVisible="False"/>
+
+                        </Grid>
+
+                        <!-- CATEGORÍA -->
+
+                        <ComboBox x:Name="CboFiltroCategoria"
+                                  Grid.Column="2"
+                                  Style="{StaticResource ComboBoxFiltro}"
+                                  DisplayMemberPath="Value"
+                                  SelectedValuePath="Key"
+                                  SelectionChanged="CboFiltroCategoria_SelectionChanged"/>
+
+                        <!-- ESTADO -->
+
+                        <ComboBox x:Name="CboFiltroEstado"
+                                  Grid.Column="4"
+                                  Style="{StaticResource ComboBoxFiltro}"
+                                  SelectedIndex="0"
+                                  SelectionChanged="CboFiltroEstado_SelectionChanged">
+
+                            <ComboBoxItem Content="Todos los estados"
+                                          Tag="TODOS"/>
+
+                            <ComboBoxItem Content="En stock"
+                                          Tag="EN STOCK"/>
+
+                            <ComboBoxItem Content="Stock bajo"
+                                          Tag="STOCK BAJO"/>
+
+                            <ComboBoxItem Content="Agotado"
+                                          Tag="AGOTADO"/>
+
+                        </ComboBox>
+
+                    </Grid>
+
+                    <!-- ===================================== -->
+                    <!-- CATÁLOGO -->
+                    <!-- ===================================== -->
+
+                    <Grid Grid.Row="2">
+
+                        <ScrollViewer x:Name="ScrollCatalogo"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      Padding="0,2,7,4">
+
+                            <Grid>
+
+                                <!-- PRODUCTOS -->
+
+                                <ItemsControl x:Name="ItemsProductos">
+
+                                    <ItemsControl.ItemsPanel>
+
+                                        <ItemsPanelTemplate>
+
+                                            <WrapPanel Orientation="Horizontal"
+                                                       HorizontalAlignment="Left"/>
+
+                                        </ItemsPanelTemplate>
+
+                                    </ItemsControl.ItemsPanel>
+
+                                    <ItemsControl.ItemTemplate>
+
+                                        <DataTemplate>
+
+                                            <!-- =============================== -->
+                                            <!-- TARJETA DEL PRODUCTO -->
+                                            <!-- =============================== -->
+
+                                            <Border Width="330"
+                                                    MinHeight="292"
+                                                    Margin="0,0,16,16"
+                                                    Padding="16"
+                                                    Background="{StaticResource ColorPanelClaro}"
+                                                    BorderBrush="{StaticResource ColorBorde}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="15">
+
+                                                <Border.Style>
+
+                                                    <Style TargetType="Border">
+
+                                                        <Setter Property="Background"
+                                                                Value="{StaticResource ColorPanelClaro}"/>
+
+                                                        <Setter Property="BorderBrush"
+                                                                Value="{StaticResource ColorBorde}"/>
+
+                                                        <Style.Triggers>
+
+                                                            <Trigger Property="IsMouseOver"
+                                                                     Value="True">
+
+                                                                <Setter Property="Background"
+                                                                        Value="{StaticResource ColorPanelHover}"/>
+
+                                                                <Setter Property="BorderBrush"
+                                                                        Value="#2B5A71"/>
+
+                                                            </Trigger>
+
+                                                        </Style.Triggers>
+
+                                                    </Style>
+
+                                                </Border.Style>
+
+                                                <Border.Effect>
+
+                                                    <DropShadowEffect Color="#000000"
+                                                                      BlurRadius="13"
+                                                                      ShadowDepth="2"
+                                                                      Opacity="0.22"/>
+
+                                                </Border.Effect>
+
+                                                <StackPanel>
+
+                                                    <!-- ======================= -->
+                                                    <!-- CABECERA -->
+                                                    <!-- ======================= -->
+
+                                                    <Grid>
+
+                                                        <Grid.ColumnDefinitions>
+
+                                                            <ColumnDefinition Width="48"/>
+
+                                                            <ColumnDefinition Width="*"/>
+
+                                                            <ColumnDefinition Width="Auto"/>
+
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <Border Grid.Column="0"
+                                                                Width="43"
+                                                                Height="43"
+                                                                Background="#123047"
+                                                                BorderBrush="#1D5369"
+                                                                BorderThickness="1"
+                                                                CornerRadius="12"
+                                                                VerticalAlignment="Top">
+
+                                                            <TextBlock Text="▣"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       FontSize="20"
+                                                                       Foreground="{StaticResource ColorCyan}"/>
+
+                                                        </Border>
+
+                                                        <StackPanel Grid.Column="1"
+                                                                    Margin="10,0,8,0">
+
+                                                            <TextBlock Text="{Binding NombreProducto}"
+                                                                       MaxHeight="42"
+                                                                       FontSize="15"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{StaticResource ColorTexto}"
+                                                                       TextWrapping="Wrap"
+                                                                       TextTrimming="CharacterEllipsis"/>
+
+                                                            <TextBlock Margin="0,5,0,0"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource ColorTextoSecundario}">
+
+                                                                <Run Text="Código "/>
+
+                                                                <Run Text="{Binding CodigoBase}"
+                                                                     FontWeight="SemiBold"
+                                                                     Foreground="{StaticResource ColorCyanClaro}"/>
+
+                                                            </TextBlock>
+
+                                                        </StackPanel>
+
+                                                        <!-- ESTADO EN STOCK -->
+
+                                                        <Border Grid.Column="2"
+                                                                Padding="9,5"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Top"
+                                                                Background="#123524"
+                                                                BorderBrush="#166534"
+                                                                BorderThickness="1"
+                                                                CornerRadius="15"
+                                                                Visibility="{Binding EsStockNormal,
+                                                                            Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                                                            <TextBlock Text="● En stock"
+                                                                       FontSize="10"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="#86EFAC"/>
+
+                                                        </Border>
+
+                                                        <!-- ESTADO BAJO -->
+
+                                                        <Border Grid.Column="2"
+                                                                Padding="9,5"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Top"
+                                                                Background="#3A2B12"
+                                                                BorderBrush="#854D0E"
+                                                                BorderThickness="1"
+                                                                CornerRadius="15"
+                                                                Visibility="{Binding EsStockBajo,
+                                                                            Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                                                            <TextBlock Text="▲ Bajo"
+                                                                       FontSize="10"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="#FDE68A"/>
+
+                                                        </Border>
+
+                                                        <!-- ESTADO AGOTADO -->
+
+                                                        <Border Grid.Column="2"
+                                                                Padding="9,5"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Top"
+                                                                Background="#3A171B"
+                                                                BorderBrush="#991B1B"
+                                                                BorderThickness="1"
+                                                                CornerRadius="15"
+                                                                Visibility="{Binding EsAgotado,
+                                                                            Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                                                            <TextBlock Text="● Agotado"
+                                                                       FontSize="10"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="#FCA5A5"/>
+
+                                                        </Border>
+
+                                                    </Grid>
+
+                                                    <!-- ======================= -->
+                                                    <!-- DETALLES -->
+                                                    <!-- ======================= -->
+
+                                                    <StackPanel Margin="0,15,0,0">
+
+                                                        <!-- CÓDIGO DE BARRAS -->
+
+                                                        <Grid Margin="0,0,0,9">
+
+                                                            <Grid.ColumnDefinitions>
+
+                                                                <ColumnDefinition Width="25"/>
+
+                                                                <ColumnDefinition Width="*"/>
+
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="▥"
+                                                                       FontSize="14"
+                                                                       Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding CodigoBarrasTexto}"
+                                                                       FontFamily="Consolas"
+                                                                       FontSize="11"
+                                                                       Foreground="#CBD5E1"
+                                                                       TextTrimming="CharacterEllipsis"/>
+
+                                                        </Grid>
+
+                                                        <!-- CATEGORÍA -->
+
+                                                        <Grid Margin="0,0,0,9">
+
+                                                            <Grid.ColumnDefinitions>
+
+                                                                <ColumnDefinition Width="25"/>
+
+                                                                <ColumnDefinition Width="*"/>
+
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="◇"
+                                                                       FontSize="15"
+                                                                       Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding NombreCategoria}"
+                                                                       FontSize="12"
+                                                                       Foreground="#CBD5E1"
+                                                                       TextTrimming="CharacterEllipsis"/>
+
+                                                        </Grid>
+
+                                                        <!-- STOCK TIENDA -->
+
+                                                        <Grid Margin="0,0,0,9">
+
+                                                            <Grid.ColumnDefinitions>
+
+                                                                <ColumnDefinition Width="25"/>
+
+                                                                <ColumnDefinition Width="*"/>
+
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="▤"
+                                                                       FontSize="14"
+                                                                       Foreground="{StaticResource ColorVerde}"/>
+
+                                                            <TextBlock Grid.Column="1"
+                                                                       FontSize="12"
+                                                                       Foreground="#CBD5E1">
+
+                                                                <Run Text="{Binding StockTotalTienda, Mode=OneWay}"
+                                                                     FontWeight="Bold"
+                                                                     Foreground="#86EFAC"/>
+                                                                
+                                                                <Run Text=" stock tienda"/>
+
+                                                            </TextBlock>
+
+                                                        </Grid>
+
+                                                        <!-- STOCK ALMACÉN -->
+
+                                                        <Grid>
+
+                                                            <Grid.ColumnDefinitions>
+
+                                                                <ColumnDefinition Width="25"/>
+
+                                                                <ColumnDefinition Width="*"/>
+
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="▦"
+                                                                       FontSize="14"
+                                                                       Foreground="#60A5FA"/>
+
+                                                            <TextBlock Grid.Column="1"
+                                                                       FontSize="12"
+                                                                       Foreground="#CBD5E1">
+
+                                                                <Run Text="{Binding StockTotalAlmacen, Mode=OneWay}"
+                                                                     FontWeight="Bold"
+                                                                     Foreground="#93C5FD"/>
+
+                                                                <Run Text=" stock almacén"/>
+
+                                                            </TextBlock>
+
+                                                        </Grid>
+
+                                                    </StackPanel>
+
+                                                    <!-- ======================= -->
+                                                    <!-- PIE -->
+                                                    <!-- ======================= -->
+
+                                                    <Border Margin="0,15,0,0"
+                                                            Padding="0,13,0,0"
+                                                            BorderBrush="{StaticResource ColorBorde}"
+                                                            BorderThickness="0,1,0,0">
+
+                                                        <Grid>
+
+                                                            <Grid.ColumnDefinitions>
+
+                                                                <ColumnDefinition Width="*"/>
+
+                                                                <ColumnDefinition Width="Auto"/>
+
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <StackPanel Grid.Column="0">
+
+                                                                <TextBlock Text="{Binding PrecioUnidadTexto}"
+                                                                           FontSize="16"
+                                                                           FontWeight="Bold"
+                                                                           Foreground="{StaticResource ColorTexto}"/>
+
+                                                                <TextBlock Margin="0,3,0,0"
+                                                                           FontSize="11"
+                                                                           Foreground="{StaticResource ColorTextoSecundario}">
+
+                                                                    <Run Text="Mayor: "/>
+
+                                                                    <Run Text="{Binding PrecioMayorTexto, Mode=OneWay}"/>
+
+                                                                </TextBlock>
+
+                                                            </StackPanel>
+
+                                                            <!-- PRODUCTO CON VARIANTES -->
+
+                                                            <Button Grid.Column="1"
+                                                                    Style="{StaticResource BotonVariantes}"
+                                                                    Tag="{Binding}"
+                                                                    Visibility="{Binding MostrarBotonVariantes,
+                                                                                 Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                    Click="BtnAlternarVariantes_Click">
+
+                                                                <StackPanel Orientation="Horizontal">
+
+                                                                    <TextBlock Text="▦"
+                                                                               Margin="0,0,7,0"
+                                                                               FontSize="13"/>
+
+                                                                    <TextBlock Text="{Binding TextoBotonVariantes}"
+                                                                               VerticalAlignment="Center"/>
+
+                                                                    <TextBlock Text="{Binding SimboloExpansion}"
+                                                                               Margin="7,0,0,0"
+                                                                               FontSize="15"
+                                                                               VerticalAlignment="Center"/>
+
+                                                                </StackPanel>
+
+                                                            </Button>
+
+                                                            <!-- PRODUCTO CON VARIANTE ÚNICA -->
+
+                                                            <Button Grid.Column="1"
+                                                                    Content="⇄"
+                                                                    Tag="{Binding VarianteUnica}"
+                                                                    IsEnabled="{Binding VarianteUnica.PuedeTransferir}"
+                                                                    Click="BtnTransferirStock_Click">
+
+                                                                <Button.Style>
+
+                                                                    <Style TargetType="Button"
+                                                                           BasedOn="{StaticResource BotonTransferencia}">
+
+                                                                        <Setter Property="Visibility"
+                                                                                Value="Visible"/>
+
+                                                                        <Style.Triggers>
+
+                                                                            <DataTrigger Binding="{Binding MostrarBotonVariantes}"
+                                                                                         Value="True">
+
+                                                                                <Setter Property="Visibility"
+                                                                                        Value="Collapsed"/>
+
+                                                                            </DataTrigger>
+
+                                                                            <DataTrigger Binding="{Binding VarianteUnica}"
+                                                                                         Value="{x:Null}">
+
+                                                                                <Setter Property="Visibility"
+                                                                                        Value="Collapsed"/>
+
+                                                                            </DataTrigger>
+
+                                                                        </Style.Triggers>
+
+                                                                    </Style>
+
+                                                                </Button.Style>
+
+                                                            </Button>
+
+                                                        </Grid>
+
+                                                    </Border>
+
+                                                    <!-- ======================= -->
+                                                    <!-- VARIANTES DESPLEGABLES -->
+                                                    <!-- ======================= -->
+
+                                                    <Border Margin="0,13,0,0"
+                                                            Padding="0,12,0,0"
+                                                            BorderBrush="#36516E"
+                                                            BorderThickness="0,1,0,0"
+                                                            Visibility="{Binding EstaExpandido,
+                                                                         Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                                                        <ItemsControl ItemsSource="{Binding Variantes}">
+
+                                                            <ItemsControl.ItemTemplate>
+
+                                                                <DataTemplate>
+
+                                                                    <Border Margin="0,0,0,9"
+                                                                            Padding="12"
+                                                                            Background="{StaticResource ColorPanelSecundario}"
+                                                                            BorderBrush="{StaticResource ColorBorde}"
+                                                                            BorderThickness="1"
+                                                                            CornerRadius="11">
+
+                                                                        <StackPanel>
+
+                                                                            <Grid>
+
+                                                                                <Grid.ColumnDefinitions>
+
+                                                                                    <ColumnDefinition Width="*"/>
+
+                                                                                    <ColumnDefinition Width="Auto"/>
+
+                                                                                </Grid.ColumnDefinitions>
+
+                                                                                <StackPanel Grid.Column="0">
+
+                                                                                    <TextBlock Text="{Binding NombreVarianteMostrar}"
+                                                                                               FontSize="12"
+                                                                                               FontWeight="Bold"
+                                                                                               Foreground="{StaticResource ColorTexto}"/>
+
+                                                                                    <TextBlock Text="{Binding CodigoBarras}"
+                                                                                               Margin="0,4,0,0"
+                                                                                               FontFamily="Consolas"
+                                                                                               FontSize="10"
+                                                                                               Foreground="{StaticResource ColorCyanClaro}"/>
+
+                                                                                </StackPanel>
+
+                                                                                <Button Grid.Column="1"
+                                                                                        Content="⇄"
+                                                                                        Tag="{Binding}"
+                                                                                        IsEnabled="{Binding PuedeTransferir}"
+                                                                                        Style="{StaticResource BotonTransferencia}"
+                                                                                        Click="BtnTransferirStock_Click"/>
+
+                                                                            </Grid>
+
+                                                                            <Grid Margin="0,11,0,0">
+
+                                                                                <Grid.ColumnDefinitions>
+
+                                                                                    <ColumnDefinition Width="*"/>
+
+                                                                                    <ColumnDefinition Width="*"/>
+
+                                                                                </Grid.ColumnDefinitions>
+
+                                                                                <StackPanel Grid.Column="0">
+
+                                                                                    <TextBlock Text="PRECIO UNIDAD"
+                                                                                               FontSize="9"
+                                                                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                                                                    <TextBlock Text="{Binding PrecioUnidadTexto, Mode=OneWay}"
+                                                                                               Margin="0,3,0,0"
+                                                                                               FontSize="12"
+                                                                                               FontWeight="SemiBold"
+                                                                                               Foreground="{StaticResource ColorTexto}"/>
+
+                                                                                </StackPanel>
+
+                                                                                <StackPanel Grid.Column="1">
+
+                                                                                    <TextBlock Text="PRECIO MAYOR"
+                                                                                               FontSize="9"
+                                                                                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                                                                    <TextBlock Text="{Binding PrecioMayorTexto, Mode=OneWay}"
+                                                                                               Margin="0,3,0,0"
+                                                                                               FontSize="12"
+                                                                                               FontWeight="SemiBold"
+                                                                                               Foreground="{StaticResource ColorTexto}"/>
+
+                                                                                </StackPanel>
+
+                                                                            </Grid>
+
+                                                                            <Grid Margin="0,11,0,0">
+
+                                                                                <Grid.ColumnDefinitions>
+
+                                                                                    <ColumnDefinition Width="*"/>
+
+                                                                                    <ColumnDefinition Width="*"/>
+
+                                                                                </Grid.ColumnDefinitions>
+
+                                                                                <Border Grid.Column="0"
+                                                                                        Margin="0,0,5,0"
+                                                                                        Padding="8"
+                                                                                        Background="#102C2A"
+                                                                                        BorderBrush="#166534"
+                                                                                        BorderThickness="1"
+                                                                                        CornerRadius="8">
+
+                                                                                    <TextBlock HorizontalAlignment="Center"
+                                                                                               FontSize="10"
+                                                                                               Foreground="#86EFAC">
+
+                                                                                        <Run Text="Tienda: "/>
+
+                                                                                        <Run Text="{Binding StockTienda, Mode=OneWay}"
+                                                                                             FontWeight="Bold"/>
+
+                                                                                    </TextBlock>
+
+                                                                                </Border>
+
+                                                                                <Border Grid.Column="1"
+                                                                                        Margin="5,0,0,0"
+                                                                                        Padding="8"
+                                                                                        Background="#11233E"
+                                                                                        BorderBrush="#1D4ED8"
+                                                                                        BorderThickness="1"
+                                                                                        CornerRadius="8">
+
+                                                                                    <TextBlock HorizontalAlignment="Center"
+                                                                                               FontSize="10"
+                                                                                               Foreground="#93C5FD">
+
+                                                                                        <Run Text="Almacén: "/>
+
+                                                                                        <Run Text="{Binding StockAlmacen, Mode=OneWay}"
+                                                                                             FontWeight="Bold"/>
+
+                                                                                    </TextBlock>
+
+                                                                                </Border>
+
+                                                                            </Grid>
+
+                                                                        </StackPanel>
+
+                                                                    </Border>
+
+                                                                </DataTemplate>
+
+                                                            </ItemsControl.ItemTemplate>
+
+                                                        </ItemsControl>
+
+                                                    </Border>
+
+                                                </StackPanel>
+
+                                            </Border>
+
+                                        </DataTemplate>
+
+                                    </ItemsControl.ItemTemplate>
+
+                                </ItemsControl>
+
+                                <!-- SIN RESULTADOS -->
+
+                                <Border x:Name="PanelSinResultados"
+                                        MinHeight="270"
+                                        Padding="30"
+                                        Background="{StaticResource ColorPanelSecundario}"
+                                        BorderBrush="#36516E"
+                                        BorderThickness="1"
+                                        CornerRadius="13"
+                                        Visibility="Collapsed">
+
+                                    <StackPanel HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+
+                                        <Border Width="58"
+                                                Height="58"
+                                                Background="#172A44"
+                                                CornerRadius="16"
+                                                HorizontalAlignment="Center">
+
+                                            <TextBlock Text="□"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="28"
+                                                       Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                        </Border>
+
+                                        <TextBlock Text="No se encontraron productos"
+                                                   Margin="0,15,0,0"
+                                                   HorizontalAlignment="Center"
+                                                   FontSize="16"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource ColorTexto}"/>
+
+                                        <TextBlock Text="Cambie los filtros o registre productos desde el módulo de almacén."
+                                                   Margin="0,7,0,0"
+                                                   MaxWidth="420"
+                                                   HorizontalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                    </StackPanel>
+
+                                </Border>
+
+                                <!-- CARGANDO -->
+
+                                <Border x:Name="PanelCargando"
+                                        MinHeight="270"
+                                        Background="#E60B1120"
+                                        CornerRadius="13"
+                                        Visibility="Collapsed">
+
+                                    <StackPanel HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+
+                                        <TextBlock Text="◌"
+                                                   HorizontalAlignment="Center"
+                                                   FontSize="35"
+                                                   Foreground="{StaticResource ColorCyan}"/>
+
+                                        <TextBlock Text="Cargando inventario..."
+                                                   Margin="0,10,0,0"
+                                                   FontSize="13"
+                                                   Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                                    </StackPanel>
+
+                                </Border>
+
+                            </Grid>
+
+                        </ScrollViewer>
+
+                    </Grid>
+
+                </Grid>
+
+            </Border>
+
+            <!-- ================================================= -->
+            <!-- PAGINACIÓN -->
+            <!-- ================================================= -->
+
+            <Border Grid.Row="1"
+                    Margin="0,16,0,0"
+                    Padding="16,12"
+                    Background="{StaticResource ColorPanel}"
+                    BorderBrush="{StaticResource ColorBorde}"
+                    BorderThickness="1"
+                    CornerRadius="13">
+
+                <Grid>
+
+                    <Grid.ColumnDefinitions>
+
+                        <ColumnDefinition Width="*"/>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                        <ColumnDefinition Width="*"/>
+
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="TxtInformacionPagina"
+                               Grid.Column="0"
+                               Text="Mostrando 0 de 0 productos"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center">
+
+                        <Button x:Name="BtnPaginaAnterior"
+                                Content="‹"
+                                Style="{StaticResource BotonPagina}"
+                                ToolTip="Página anterior"
+                                Click="BtnPaginaAnterior_Click"/>
+
+                        <StackPanel x:Name="PanelPaginas"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"/>
+
+                        <Button x:Name="BtnPaginaSiguiente"
+                                Content="›"
+                                Style="{StaticResource BotonPagina}"
+                                ToolTip="Página siguiente"
+                                Click="BtnPaginaSiguiente_Click"/>
+
+                    </StackPanel>
+
+                    <TextBlock x:Name="TxtNumeroPagina"
+                               Grid.Column="2"
+                               Text="Página 1 de 1"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                </Grid>
+
+            </Border>
+
+        </Grid>
+
     </Grid>
-</Window>
+
+</UserControl>

@@ -38,6 +38,12 @@ namespace ProySistemaVentas.Views
             ContenidoPrincipal.Content = new AlmacenControl();
         }
 
+        private void BtnInventarioTienda_Click(object sender,RoutedEventArgs e)
+        {
+            ContenidoPrincipal.Content =
+                new InventarioTiendaControl();
+        }
+
 
     }
 }
