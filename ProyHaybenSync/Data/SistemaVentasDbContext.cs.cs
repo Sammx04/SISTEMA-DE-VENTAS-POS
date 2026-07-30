@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProySistemaVentas.Models;
+using ProySistemaVentas.Models.Almacen;
+using ProySistemaVentas.Models.Ventas;
 
 
 namespace ProySistemaVentas.Data

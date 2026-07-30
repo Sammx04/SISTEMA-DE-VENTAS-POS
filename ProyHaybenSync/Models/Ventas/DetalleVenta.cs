@@ -1,10 +1,11 @@
-﻿using System;
+﻿using ProySistemaVentas.Models.Almacen;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProySistemaVentas.Models
+namespace ProySistemaVentas.Models.Ventas
 {
     public class DetalleVenta
     {
