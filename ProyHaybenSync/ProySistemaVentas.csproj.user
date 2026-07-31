@@ -2,6 +2,9 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup />
   <ItemGroup>
+    <Compile Update="Views\Dialogs\DetallePrestamoCreditoDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\Dialogs\DetalleProductoDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -42,6 +45,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UserControls\InventarioTiendaControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\UserControls\PrestamosCreditosControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UserControls\UsuariosControl.xaml.cs">

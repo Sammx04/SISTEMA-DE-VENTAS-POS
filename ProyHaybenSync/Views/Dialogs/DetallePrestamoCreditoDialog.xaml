@@ -1,0 +1,671 @@
+﻿<Window x:Class="ProySistemaVentas.Views.Dialogs.DetallePrestamoCreditoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Detalle de operación"
+        Width="880"
+        Height="720"
+        MinWidth="760"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="#0B1120"
+        FontFamily="Segoe UI"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+
+        <SolidColorBrush x:Key="PanelBrush"
+                         Color="#0D1526"/>
+
+        <SolidColorBrush x:Key="PanelClaroBrush"
+                         Color="#13203A"/>
+
+        <SolidColorBrush x:Key="BordeBrush"
+                         Color="#24344F"/>
+
+        <SolidColorBrush x:Key="CianBrush"
+                         Color="#22D3EE"/>
+
+        <SolidColorBrush x:Key="TextoPrincipalBrush"
+                         Color="#F8FAFC"/>
+
+        <SolidColorBrush x:Key="TextoSecundarioBrush"
+                         Color="#94A3B8"/>
+
+        <Style x:Key="CardStyle"
+               TargetType="Border">
+
+            <Setter Property="Background"
+                    Value="{StaticResource PanelBrush}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource BordeBrush}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="CornerRadius"
+                    Value="12"/>
+
+            <Setter Property="Padding"
+                    Value="15"/>
+
+        </Style>
+
+        <Style x:Key="EtiquetaStyle"
+               TargetType="TextBlock">
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource TextoSecundarioBrush}"/>
+
+            <Setter Property="FontSize"
+                    Value="11"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="TextWrapping"
+                    Value="Wrap"/>
+
+        </Style>
+
+        <Style x:Key="ValorStyle"
+               TargetType="TextBlock">
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource TextoPrincipalBrush}"/>
+
+            <Setter Property="FontSize"
+                    Value="14"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="TextWrapping"
+                    Value="Wrap"/>
+
+            <Setter Property="Margin"
+                    Value="0,5,0,0"/>
+
+        </Style>
+
+        <Style x:Key="BotonCerrarStyle"
+               TargetType="Button">
+
+            <Setter Property="Width"
+                    Value="120"/>
+
+            <Setter Property="Height"
+                    Value="40"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource CianBrush}"/>
+
+            <Setter Property="Foreground"
+                    Value="#083344"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="FontWeight"
+                    Value="Bold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="12,7">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.85"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.65"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <Style TargetType="DataGrid">
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource TextoPrincipalBrush}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="GridLinesVisibility"
+                    Value="Horizontal"/>
+
+            <Setter Property="HorizontalGridLinesBrush"
+                    Value="{StaticResource BordeBrush}"/>
+
+            <Setter Property="RowBackground"
+                    Value="{StaticResource PanelBrush}"/>
+
+            <Setter Property="AlternatingRowBackground"
+                    Value="#101B31"/>
+
+            <Setter Property="HeadersVisibility"
+                    Value="Column"/>
+
+            <Setter Property="AutoGenerateColumns"
+                    Value="False"/>
+
+            <Setter Property="CanUserAddRows"
+                    Value="False"/>
+
+            <Setter Property="CanUserDeleteRows"
+                    Value="False"/>
+
+            <Setter Property="CanUserResizeRows"
+                    Value="False"/>
+
+            <Setter Property="IsReadOnly"
+                    Value="True"/>
+
+            <Setter Property="RowHeight"
+                    Value="48"/>
+
+            <Setter Property="ColumnHeaderHeight"
+                    Value="38"/>
+
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+
+            <Setter Property="Background"
+                    Value="{StaticResource PanelClaroBrush}"/>
+
+            <Setter Property="Foreground"
+                    Value="#CBD5E1"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource BordeBrush}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0,0,0,1"/>
+
+            <Setter Property="Padding"
+                    Value="8,5"/>
+
+        </Style>
+
+        <Style TargetType="DataGridCell">
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="Padding"
+                    Value="8,4"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="FocusVisualStyle"
+                    Value="{x:Null}"/>
+
+        </Style>
+
+        <Style TargetType="DataGridRow">
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource TextoPrincipalBrush}"/>
+
+            <Setter Property="FocusVisualStyle"
+                    Value="{x:Null}"/>
+
+            <Style.Triggers>
+
+                <Trigger Property="IsMouseOver"
+                         Value="True">
+
+                    <Setter Property="Background"
+                            Value="#172A46"/>
+
+                </Trigger>
+
+            </Style.Triggers>
+
+        </Style>
+
+    </Window.Resources>
+
+    <Grid Margin="22">
+
+        <Grid.RowDefinitions>
+
+            <RowDefinition Height="Auto"/>
+
+            <RowDefinition Height="*"/>
+
+            <RowDefinition Height="Auto"/>
+
+        </Grid.RowDefinitions>
+
+
+        <!-- ENCABEZADO -->
+
+        <Border Grid.Row="0"
+                Background="#102A43"
+                BorderBrush="{StaticResource CianBrush}"
+                BorderThickness="1"
+                CornerRadius="14"
+                Padding="18"
+                Margin="0,0,0,18">
+
+            <Grid>
+
+                <Grid.ColumnDefinitions>
+
+                    <ColumnDefinition Width="*"/>
+
+                    <ColumnDefinition Width="Auto"/>
+
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+
+                    <TextBlock Text="Detalle de la operación"
+                               Foreground="{StaticResource TextoPrincipalBrush}"
+                               FontSize="22"
+                               FontWeight="Bold"/>
+
+                    <TextBlock Text="{Binding NumeroOperacion, Mode=OneWay}"
+                               Foreground="#67E8F9"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Margin="0,5,0,0"/>
+
+                </StackPanel>
+
+                <Border x:Name="BrdEstado"
+                        Grid.Column="1"
+                        Background="#78350F"
+                        CornerRadius="15"
+                        Padding="13,7"
+                        VerticalAlignment="Center">
+
+                    <TextBlock x:Name="TxtEstado"
+                               Text="{Binding EstadoMostrar, Mode=OneWay}"
+                               Foreground="#FCD34D"
+                               FontWeight="Bold"
+                               FontSize="12"/>
+
+                </Border>
+
+            </Grid>
+
+        </Border>
+
+
+        <!-- CONTENIDO -->
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto">
+
+            <StackPanel>
+
+
+                <!-- INFORMACIÓN GENERAL -->
+
+                <TextBlock Text="Información general"
+                           Foreground="{StaticResource TextoPrincipalBrush}"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,10"/>
+
+                <UniformGrid Columns="3"
+                             Margin="0,0,0,18">
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="TIPO DE OPERACIÓN"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock x:Name="TxtTipoOperacion"
+                                       Text="-"
+                                       Style="{StaticResource ValorStyle}"
+                                       Foreground="#67E8F9"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="CLIENTE O TIENDA"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding ClienteTienda, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,0,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="ACCIÓN ACTUAL"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding AccionActual, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="PRODUCTO"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding NombreProducto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="VARIANTE"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding Variante, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,0,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="CÓDIGO DE BARRAS"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding CodigoBarra, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="CANTIDAD"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding CantidadTexto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="PRECIO UNITARIO"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding PrecioUnitarioTexto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,0,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="PRECIO TOTAL"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding TotalTexto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"
+                                       Foreground="#4ADE80"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="FECHA DE REGISTRO"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding FechaRegistroTexto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border x:Name="BrdFechaEsperada"
+                            Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="FECHA ESPERADA DE PAGO"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding FechaPagoEsperadaTexto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,0,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="FECHA DE FINALIZACIÓN"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding FechaFinalizacionTexto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="TRABAJADOR QUE REGISTRÓ"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding NombreTrabajadorRegistro, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="ÚLTIMA ACCIÓN REALIZADA POR"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding NombreTrabajadorUltimaAccion, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border x:Name="BrdMetodoPago"
+                            Style="{StaticResource CardStyle}"
+                            Margin="0,0,0,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="MÉTODO DE PAGO"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding MetodoPagoRegistrado, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </UniformGrid>
+
+
+                <!-- OBSERVACIÓN -->
+
+                <Border Style="{StaticResource CardStyle}"
+                        Margin="0,0,0,18">
+
+                    <StackPanel>
+
+                        <TextBlock Text="OBSERVACIÓN"
+                                   Style="{StaticResource EtiquetaStyle}"/>
+
+                        <TextBlock Text="{Binding Observacion, Mode=OneWay}"
+                                   Style="{StaticResource ValorStyle}"
+                                   MinHeight="25"/>
+
+                    </StackPanel>
+
+                </Border>
+
+
+                <!-- HISTORIAL -->
+
+                <TextBlock Text="Historial de movimientos"
+                           Foreground="{StaticResource TextoPrincipalBrush}"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,10"/>
+
+                <Border Style="{StaticResource CardStyle}"
+                        Padding="0"
+                        Margin="0,0,0,8">
+
+                    <DataGrid x:Name="DgHistorial"
+                              ItemsSource="{Binding Historial, Mode=OneWay}"
+                              MaxHeight="260">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="Acción"
+                                                Binding="{Binding TipoMovimientoTexto, Mode=OneWay}"
+                                                Width="1.3*"/>
+
+                            <DataGridTextColumn Header="Trabajador"
+                                                Binding="{Binding NombreTrabajador, Mode=OneWay}"
+                                                Width="*"/>
+
+                            <DataGridTextColumn Header="Fecha"
+                                                Binding="{Binding FechaMovimientoTexto, Mode=OneWay}"
+                                                Width="135"/>
+
+                            <DataGridTextColumn Header="Observación"
+                                                Binding="{Binding Observacion, Mode=OneWay}"
+                                                Width="1.5*"/>
+
+                        </DataGrid.Columns>
+
+                    </DataGrid>
+
+                </Border>
+
+            </StackPanel>
+
+        </ScrollViewer>
+
+
+        <!-- BOTÓN CERRAR -->
+
+        <Grid Grid.Row="2"
+              Margin="0,18,0,0">
+
+            <Button Content="Cerrar"
+                    Style="{StaticResource BotonCerrarStyle}"
+                    HorizontalAlignment="Right"
+                    Click="BtnCerrar_Click"/>
+
+        </Grid>
+
+    </Grid>
+
+</Window>

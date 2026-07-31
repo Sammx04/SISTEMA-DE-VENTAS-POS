@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
+
 namespace ProySistemaVentas.Views
 {
     /// <summary>
@@ -48,6 +49,12 @@ namespace ProySistemaVentas.Views
         {
             ContenidoPrincipal.Content =
                 new VentaPOSControl();
+        }
+
+        private void BtnPrestamosCreditos_Click(object sender,RoutedEventArgs e)
+        {
+            ContenidoPrincipal.Content =
+                new PrestamosCreditosControl();
         }
 
 
