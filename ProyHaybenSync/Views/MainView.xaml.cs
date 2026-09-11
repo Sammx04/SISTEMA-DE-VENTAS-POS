@@ -44,6 +44,12 @@ namespace ProySistemaVentas.Views
                 new InventarioTiendaControl();
         }
 
+        private void BtnVentas_Click(object sender,RoutedEventArgs e)
+        {
+            ContenidoPrincipal.Content =
+                new VentaPOSControl();
+        }
+
 
     }
 }
