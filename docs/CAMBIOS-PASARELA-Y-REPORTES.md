@@ -199,12 +199,67 @@ sqlcmd -S <SERVIDOR> -d SistemaVentas -E -C -i "ProyHaybenSync\SQL\sp_reportes_S
 Requiere **SQL Server 2016 o superior** porque `CREATE OR ALTER` no existe en
 2012.
 
-### 5.2 Pasarela
+### 5.2 Datos de prueba
+
+Para probar los reportes sin tener que registrar ventas a mano, hay un script
+que genera 48 ventas repartidas en los últimos 30 días:
+
+```sql
+-- ruta del archivo en el repo
+ProyHaybenSync/SQL/datos_prueba_reportes.sql
+```
+
+```powershell
+sqlcmd -S <SERVIDOR> -d SistemaVentas -E -C -i "ProyHaybenSync\SQL\datos_prueba_reportes.sql"
+```
+
+Qué genera:
+
+- 48 ventas cubriendo 30 días distintos, con fecha y hora dentro del horario de
+  tienda (08:00 a 17:59).
+- Rotación de los 3 métodos de pago y de todos los usuarios activos.
+- Rotación de variantes, alternando precio `UNIDAD` y `MAYOR`.
+- Algunas líneas con descuento y 2 ventas en estado `ANULADA`, para probar el
+  filtro de estado.
+- 96 líneas de detalle repartidas entre 1 y 3 por venta.
+- Los clientes que faltaban en `ClientePOS`, porque estaba vacía.
+
+Todas las ventas falsas llevan el prefijo **`PRUEBA-`** en `NumeroVenta`, así
+que se borran con:
+
+```sql
+DELETE d
+FROM DetalleVentaPOS d
+INNER JOIN VentaPOS v ON v.IdVenta = d.IdVenta
+WHERE v.NumeroVenta LIKE 'PRUEBA-%';
+
+DELETE FROM VentaPOS
+WHERE NumeroVenta LIKE 'PRUEBA-%';
+```
+
+El script es re-ejecutable y determinístico: al borrarlo y volver a correrlo sale
+exactamente el mismo conjunto de datos.
+
+Dos decisiones a propósito:
+
+- **No descuenta stock.** Se insertan las ventas directo en `VentaPOS` y
+  `DetalleVentaPOS` en vez de usar `sp_POS_RegistrarVenta`, porque ese SP
+  descuenta de `StockSucursal` y fecha todo con `GETDATE()`. Así los reportes de
+  inventario siguen reflejando el stock real, y los de ventas se pueden probar
+  con fechas pasadas.
+- **No crea `dbo.MovimientoStock`.** El reporte de Kardex sigue vacío; ver
+  sección 6.2.
+
+Al probarlo se verificó que las cabeceras cuadran con el detalle
+(`Subtotal = SUM(TotalLinea)`, `Total = Subtotal + IGV`) y que el recargo del
+5% solo se aplicó a ventas con `TARJETA`.
+
+### 5.3 Pasarela
 
 No hay que correr nada: los 4 procedimientos `sp_pago_*` y la tabla
 `IntentoPagoPOS` ya están en la base. Ver la sección 7.
 
-### 5.3 Herramienta de prueba de humo
+### 5.4 Herramienta de prueba de humo
 
 `test/ProyectoPruebas` es una consola que prueba el flujo de Niubiz sin abrir
 el POS. Se agregó a la solución y se ejecuta aparte:
@@ -277,6 +332,7 @@ ProyHaybenSync/Models/Reporte/VentaPorCategoriaReporte.cs
 ProyHaybenSync/Models/Reporte/VentaPorTipoPrecioReporte.cs
 ProyHaybenSync/Models/Reporte/VentaPorUsuarioReporte.cs
 ProyHaybenSync/Models/Reporte/VentaReporteDetalle.cs
+ProyHaybenSync/SQL/datos_prueba_reportes.sql
 ProyHaybenSync/SQL/sp_reportes_SistemaVentas.sql
 ProyHaybenSync/Services/Pagos/IntentoPagoRepository.cs
 ProyHaybenSync/Services/Pagos/NiubizConfigService.cs
