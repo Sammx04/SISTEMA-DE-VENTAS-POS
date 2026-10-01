@@ -1,0 +1,386 @@
+<Window x:Class="ProySistemaVentas.Views.Dialogs.CheckoutNiubizDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Pago con tarjeta"
+        Width="780"
+        Height="720"
+        MinWidth="700"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        Background="#E8EDF5"
+        Loaded="BtnCargar_Loaded">
+
+    <Window.Resources>
+
+        <!-- ================================================== -->
+        <!-- COLORES (TONOS CLAROS) -->
+        <!-- ================================================== -->
+
+        <SolidColorBrush x:Key="ColorFondo"
+                         Color="#E8EDF5"/>
+
+        <SolidColorBrush x:Key="ColorPanel"
+                         Color="#FFFFFF"/>
+
+        <SolidColorBrush x:Key="ColorLinea"
+                         Color="#D8DFEA"/>
+
+        <SolidColorBrush x:Key="ColorTexto"
+                         Color="#1F2937"/>
+
+        <SolidColorBrush x:Key="ColorTextoSecundario"
+                         Color="#6B7280"/>
+
+        <SolidColorBrush x:Key="ColorCyan"
+                         Color="#0E7C86"/>
+
+        <SolidColorBrush x:Key="ColorRojo"
+                         Color="#DC2626"/>
+
+        <SolidColorBrush x:Key="ColorVerde"
+                         Color="#15803D"/>
+
+        <!-- ================================================== -->
+        <!-- BOTÓN CERRAR -->
+        <!-- ================================================== -->
+
+        <Style x:Key="BotonCerrar"
+               TargetType="Button">
+
+            <Setter Property="Width"
+                    Value="36"/>
+
+            <Setter Property="Height"
+                    Value="36"/>
+
+            <Setter Property="Padding"
+                    Value="0"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTextoSecundario}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="FontSize"
+                    Value="14"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeCerrar"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeCerrar"
+                                        Property="Background"
+                                        Value="#F1F5F9"/>
+
+                                <Setter Property="Foreground"
+                                        Value="#111827"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeCerrar"
+                                        Property="Opacity"
+                                        Value="0.70"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!-- ================================================== -->
+        <!-- BOTÓN CANCELAR PAGO -->
+        <!-- ================================================== -->
+
+        <Style x:Key="BotonCancelarPago"
+               TargetType="Button">
+
+            <Setter Property="Height"
+                    Value="42"/>
+
+            <Setter Property="MinWidth"
+                    Value="150"/>
+
+            <Setter Property="Padding"
+                    Value="20,0"/>
+
+            <Setter Property="Background"
+                    Value="#FFFFFF"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ColorTexto}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource ColorLinea}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="BordeBoton"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9"
+                                Padding="{TemplateBinding Padding}">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Background"
+                                        Value="#F1F5F9"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="BordeBoton"
+                                        Property="Opacity"
+                                        Value="0.75"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+    </Window.Resources>
+
+    <!-- ====================================================== -->
+    <!-- CONTENEDOR PRINCIPAL -->
+    <!-- ====================================================== -->
+
+    <Border Background="{StaticResource ColorPanel}"
+            BorderBrush="#C9D3E1"
+            BorderThickness="1"
+            CornerRadius="14">
+
+        <Grid>
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="74"/>
+
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="0"/>
+
+                <RowDefinition Height="82"/>
+
+            </Grid.RowDefinitions>
+
+            <!-- ================================================== -->
+            <!-- ENCABEZADO -->
+            <!-- ================================================== -->
+
+            <Border Grid.Row="0"
+                    Background="{StaticResource ColorPanel}"
+                    BorderBrush="{StaticResource ColorLinea}"
+                    BorderThickness="0,0,0,1"
+                    CornerRadius="14,14,0,0"
+                    MouseLeftButtonDown="Encabezado_MouseLeftButtonDown">
+
+                <Grid Margin="22,0,15,0">
+
+                    <Grid.ColumnDefinitions>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                        <ColumnDefinition Width="*"/>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            Width="44"
+                            Height="44"
+                            VerticalAlignment="Center"
+                            Background="#E0F2FE"
+                            BorderBrush="#0E7C86"
+                            BorderThickness="1"
+                            CornerRadius="12">
+
+                        <TextBlock Text="💳"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="22"/>
+
+                    </Border>
+
+                    <StackPanel Grid.Column="1"
+                                Margin="14,0,0,0"
+                                VerticalAlignment="Center">
+
+                        <TextBlock Text="Pago con tarjeta"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource ColorTexto}"/>
+
+                        <TextBlock x:Name="TxtSubTitulo"
+                                   Text="Complete los datos de su tarjeta"
+                                   Margin="0,4,0,0"
+                                   FontSize="12"
+                                   Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Content="✕"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource BotonCerrar}"
+                            Click="BtnCancelar_Click"/>
+
+                </Grid>
+
+            </Border>
+
+            <!-- ================================================== -->
+            <!-- CONTENIDO (WEBVIEW2) -->
+            <!-- ================================================== -->
+
+            <Border Grid.Row="1"
+                    Background="{StaticResource ColorPanel}"
+                    Padding="0,0,0,0">
+
+                <Grid>
+
+                    <StackPanel x:Name="PanelCargando"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+
+                        <TextBlock x:Name="TxtEstado"
+                                   Text="Conectando con la pasarela..."
+                                   HorizontalAlignment="Center"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource ColorTexto}"/>
+
+                        <TextBlock Text="Espere un momento"
+                                   Margin="0,8,0,0"
+                                   HorizontalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                        <TextBlock x:Name="TxtMensaje"
+                                   Margin="0,14,0,0"
+                                   HorizontalAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="560"
+                                   FontSize="12"
+                                   Foreground="{StaticResource ColorRojo}"/>
+
+                    </StackPanel>
+
+                    <wv2:WebView2 x:Name="WebPago"
+                                  Visibility="Collapsed"/>
+
+                </Grid>
+
+            </Border>
+
+            <!-- ================================================== -->
+            <!-- PIE -->
+            <!-- ================================================== -->
+
+            <Border Grid.Row="3"
+                    Background="{StaticResource ColorPanel}"
+                    BorderBrush="{StaticResource ColorLinea}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,14,14">
+
+                <Grid Margin="24,0">
+
+                    <StackPanel VerticalAlignment="Center">
+
+                        <TextBlock Text="La información de su tarjeta es procesada directamente por Niubiz."
+                                   FontSize="11"
+                                   Foreground="{StaticResource ColorTextoSecundario}"/>
+
+                        <TextBlock x:Name="TxtMonto"
+                                   Text=""
+                                   Margin="0,4,0,0"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource ColorVerde}"/>
+
+                    </StackPanel>
+
+                    <Button Content="Cancelar pago"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource BotonCancelarPago}"
+                            Click="BtnCancelar_Click"/>
+
+                </Grid>
+
+            </Border>
+
+        </Grid>
+
+    </Border>
+
+</Window>

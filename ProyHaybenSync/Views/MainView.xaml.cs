@@ -50,6 +50,14 @@ namespace ProySistemaVentas.Views
                 new VentaPOSControl();
         }
 
+        private void BtnReportes_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            ContenidoPrincipal.Content =
+                new ReportesControl();
+        }
+
 
     }
 }

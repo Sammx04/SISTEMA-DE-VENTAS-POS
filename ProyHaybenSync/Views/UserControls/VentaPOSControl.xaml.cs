@@ -1,5 +1,7 @@
 ﻿using ProySistemaVentas.Models.InventarioTienda;
+using ProySistemaVentas.Models.Pagos;
 using ProySistemaVentas.Models.VentasPOS;
+using ProySistemaVentas.Services.Pagos;
 using ProySistemaVentas.Services.VentasPOS;
 using ProySistemaVentas.Views.Dialogs;
 using System;
@@ -1109,21 +1111,170 @@ namespace ProySistemaVentas.Views.UserControls
                     _carrito.ToList();
 
                 ResultadoVentaPOS resultado =
-                    await Task.Run(
-                        () =>
-                            _ventaService
-                                .RegistrarVenta(
-                                    trabajador.IdUsuario,
-                                    tipoDocumento,
-                                    tipoDocumento == "OTROS"
-                                        ? null
-                                        : numeroDocumento,
-                                    "Otros clientes",
-                                    _metodoPagoSeleccionado,
-                                    subtotal,
-                                    recargoTarjeta,
-                                    total,
-                                    detalle));
+                    null;
+
+                string numeroOrdenPago =
+                    null;
+
+                /*
+                 * Cuando el método seleccionado es TARJETA la venta
+                 * solo se registra si Niubiz aprueba el cobro.
+                 */
+                if (_metodoPagoSeleccionado ==
+                    "TARJETA")
+                {
+                    IntentoPagoRepository intentoRepo =
+                        new IntentoPagoRepository();
+
+                    NiubizService niubizService =
+                        new NiubizService();
+
+                    NiubizConfigService.ValidarCredenciales();
+
+                    MostrarCargando(
+                        true,
+                        "Preparando pago con tarjeta...");
+
+                    numeroOrdenPago =
+                        await Task.Run(
+                            () =>
+                                intentoRepo
+                                    .ObtenerProximoNumeroPago());
+
+                    intentoRepo.CrearIntento(
+                        numeroOrdenPago,
+                        trabajador.IdUsuario,
+                        "NIUBIZ",
+                        "TARJETA",
+                        NiubizConfigService.Moneda,
+                        total);
+
+                    string securityToken =
+                        await niubizService
+                            .ObtenerTokenSeguridadAsync();
+
+                    string sessionKey =
+                        await niubizService
+                            .CrearSesionAsync(
+                                securityToken,
+                                total,
+                                numeroOrdenPago,
+                                "127.0.0.1",
+                                "",
+                                numeroDocumento,
+                                false);
+
+                    MostrarCargando(false);
+
+                    CheckoutNiubizDialog checkout =
+                        new CheckoutNiubizDialog(
+                            sessionKey,
+                            NiubizConfigService.MerchantId,
+                            numeroOrdenPago,
+                            total,
+                            NiubizConfigService.Moneda,
+                            NiubizConfigService.CheckoutJs)
+                        {
+                            Owner = Window.GetWindow(this)
+                        };
+
+                    bool pagoCompletado =
+                        checkout.ShowDialog() == true &&
+                        checkout.PagoCompletado;
+
+                    if (!pagoCompletado ||
+                        string.IsNullOrWhiteSpace(
+                            checkout.TransactionToken))
+                    {
+                        intentoRepo.ActualizarResultado(
+                            numeroOrdenPago,
+                            "CANCELADO",
+                            mensajeRespuesta:
+                                "El pago fue cancelado por el usuario.");
+
+                        return;
+                    }
+
+                    ResultadoPagoNiubiz resultadoPago =
+                        await niubizService
+                            .AutorizarPagoAsync(
+                                securityToken,
+                                checkout.TransactionToken,
+                                total,
+                                numeroOrdenPago);
+
+                    if (!resultadoPago.Aprobado)
+                    {
+                        intentoRepo.ActualizarResultado(
+                            numeroOrdenPago,
+                            "RECHAZADO",
+                            resultadoPago.IdTransaccionExterna,
+                            "",
+                            resultadoPago.CodigoRespuesta,
+                            resultadoPago.MensajeRespuesta
+                                ?? resultadoPago.CodigoRespuesta);
+
+                        MensajeDialog.Mostrar(
+                            Window.GetWindow(this),
+                            "El pago fue rechazado",
+                            "La tarjeta no pudo ser cobrada.\n\n" +
+                            $"Respuesta: {resultadoPago.CodigoRespuesta}\n" +
+                            $"Detalle: {resultadoPago.MensajeRespuesta}\n\n" +
+                            "La venta NO fue registrada.",
+                            TipoMensaje.Error);
+
+                        return;
+                    }
+
+                    MostrarCargando(
+                        true,
+                        "Cobro aprobado, registrando venta...");
+
+                    resultado =
+                        await Task.Run(
+                            () =>
+                                _ventaService
+                                    .RegistrarVenta(
+                                        trabajador.IdUsuario,
+                                        tipoDocumento,
+                                        tipoDocumento == "OTROS"
+                                            ? null
+                                            : numeroDocumento,
+                                        "Otros clientes",
+                                        _metodoPagoSeleccionado,
+                                        subtotal,
+                                        recargoTarjeta,
+                                        total,
+                                        detalle));
+
+                    intentoRepo.ActualizarResultado(
+                        numeroOrdenPago,
+                        "APROBADO",
+                        resultadoPago.IdTransaccionExterna,
+                        resultadoPago.CodigoAutorizacion,
+                        resultadoPago.CodigoRespuesta,
+                        resultadoPago.MensajeRespuesta,
+                        resultado.IdVentaPOS);
+                }
+                else
+                {
+                    resultado =
+                        await Task.Run(
+                            () =>
+                                _ventaService
+                                    .RegistrarVenta(
+                                        trabajador.IdUsuario,
+                                        tipoDocumento,
+                                        tipoDocumento == "OTROS"
+                                            ? null
+                                            : numeroDocumento,
+                                        "Otros clientes",
+                                        _metodoPagoSeleccionado,
+                                        subtotal,
+                                        recargoTarjeta,
+                                        total,
+                                        detalle));
+                }
 
                 resultado.NombreTrabajador =
                     trabajador.NombreMostrar;

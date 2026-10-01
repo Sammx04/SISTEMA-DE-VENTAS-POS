@@ -191,7 +191,7 @@
                         </RadioButton>
 
                         <!-- Reportes -->
-                        <RadioButton Style="{StaticResource MenuRadioButtonStyle}">
+                        <RadioButton Style="{StaticResource MenuRadioButtonStyle}" x:Name="BtnReportes" Click="BtnReportes_Click">
                             <StackPanel Orientation="Horizontal">
                                 <!-- Icono: description (documento con líneas) -->
                                 <Path Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 15h8v2H8v-2zm0-4h8v2H8v-2zm0 8h5v-2H8v2z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Width="18" Height="18" Stretch="Uniform"/>
