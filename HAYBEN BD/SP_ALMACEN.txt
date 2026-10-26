@@ -1,0 +1,2947 @@
+use SistemaVentas
+go
+
+/*=========================================
+  LOGIN
+=========================================*/
+CREATE PROCEDURE sp_login
+    @usuario VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        u.id_usuario,
+        u.nombre,
+        u.usuario,
+        u.password,
+        r.nombre AS rol
+    FROM usuarios u
+    INNER JOIN roles r
+        ON u.id_rol = r.id_rol
+    WHERE u.usuario = @usuario;
+END;
+GO
+UPDATE usuarios
+SET password = '$2a$11$jmS4CXrV0ds5nXUjscO6eetadTmRf0WxlxrXCt31kt/BjgidWJx7i'
+WHERE usuario = 'admin';
+
+/*=========================================
+  CREAR USUARIO
+=========================================*/
+CREATE PROCEDURE sp_crear_usuario
+    @nombre VARCHAR(100),
+    @usuario VARCHAR(50),
+    @password VARCHAR(255),
+    @id_rol INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO usuarios(
+        nombre,
+        usuario,
+        password,
+        id_rol
+    )
+    VALUES(
+        @nombre,
+        @usuario,
+        @password,
+        @id_rol
+    );
+END;
+GO
+
+/*=========================================
+  LISTAR USUARIOS
+=========================================*/
+CREATE PROCEDURE sp_listar_usuarios
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        u.id_usuario,
+        u.nombre,
+        u.usuario,
+        r.nombre AS rol,
+        u.estado
+    FROM usuarios u
+    INNER JOIN roles r
+        ON u.id_rol = r.id_rol
+    ORDER BY u.nombre;
+END
+GO
+
+CREATE PROCEDURE sp_buscar_usuario
+    @texto VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        u.id_usuario,
+        u.nombre,
+        u.usuario,
+        r.nombre AS rol,
+        u.estado
+    FROM usuarios u
+    INNER JOIN roles r
+        ON u.id_rol = r.id_rol
+    WHERE
+        u.nombre LIKE '%' + @texto + '%'
+        OR
+        u.usuario LIKE '%' + @texto + '%'
+    ORDER BY u.nombre;
+END
+GO
+
+CREATE PROCEDURE sp_actualizar_usuario
+(
+    @id_usuario INT,
+    @nombre VARCHAR(100),
+    @usuario VARCHAR(50),
+    @id_rol INT,
+    @estado BIT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE usuarios
+    SET
+        nombre = @nombre,
+        usuario = @usuario,
+        id_rol = @id_rol,
+        estado = @estado
+    WHERE id_usuario = @id_usuario;
+END
+GO
+
+CREATE PROCEDURE sp_cambiar_estado_usuario
+(
+    @id_usuario INT,
+    @estado BIT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE usuarios
+    SET estado = @estado
+    WHERE id_usuario = @id_usuario;
+END;
+GO
+
+/*====================================================
+  TIPOS PARA ENVIAR LISTAS DESDE C#
+====================================================*/
+IF TYPE_ID('TipoVariante') IS NULL
+BEGIN
+    EXEC('
+    CREATE TYPE TipoVariante AS TABLE(
+        Descripcion NVARCHAR(100),
+        PrecioUnidad DECIMAL(10,2),
+        PrecioMayor DECIMAL(10,2),
+        Stock INT
+    );
+    ');
+END
+GO
+
+IF TYPE_ID('TVP_DetalleVentaPOS') IS NULL
+BEGIN
+    EXEC('
+    CREATE TYPE TVP_DetalleVentaPOS AS TABLE(
+        IdProducto INT,
+        IdVariante INT,
+        NombreProducto VARCHAR(150),
+        Categoria VARCHAR(100),
+        CodigoBarra VARCHAR(50),
+        TipoPrecio VARCHAR(20),
+        PrecioUnitario DECIMAL(10,2),
+        Cantidad INT,
+        Descuento DECIMAL(10,2),
+        TotalLinea DECIMAL(10,2)
+    );
+    ');
+END
+GO
+
+/*====================================================
+  CATEGORÍAS
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_CrearCategoria
+    @Nombre NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO Categorias(Nombre)
+    VALUES(@Nombre);
+
+    SELECT SCOPE_IDENTITY() AS IdCategoria;
+END
+GO
+
+CREATE OR ALTER PROCEDURE sp_ListarCategorias
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        IdCategoria,
+        Nombre,
+        Estado
+    FROM Categorias
+    WHERE Estado = 1
+    ORDER BY Nombre;
+END
+GO
+
+/*====================================================
+  CÓDIGO BASE
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_GenerarCodigoBase
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRANSACTION;
+
+    UPDATE SecuenciaProducto
+    SET UltimoNumero = UltimoNumero + 1
+    WHERE Id = 1;
+
+    DECLARE @NuevoNumero INT;
+
+    SELECT @NuevoNumero = UltimoNumero
+    FROM SecuenciaProducto
+    WHERE Id = 1;
+
+    COMMIT TRANSACTION;
+
+    SELECT RIGHT('0000000' + CAST(@NuevoNumero AS VARCHAR(7)), 7) AS CodigoBase;
+END
+GO
+
+CREATE OR ALTER PROCEDURE sp_ObtenerProximoCodigoBase
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ProximoNumero INT;
+
+    SELECT @ProximoNumero = UltimoNumero + 1
+    FROM SecuenciaProducto
+    WHERE Id = 1;
+
+    SELECT RIGHT('0000000' + CAST(@ProximoNumero AS VARCHAR(7)), 7) AS CodigoBase;
+END
+GO
+
+/*====================================================
+  CREAR PRODUCTO CON INVENTARIO
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_CrearProductoInventario
+    @Nombre NVARCHAR(150),
+    @IdCategoria INT,
+    @Descripcion NVARCHAR(300),
+    @TieneVariantes BIT,
+    @ListaVariantes TipoVariante READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @CodigoBase CHAR(7);
+        DECLARE @IdProducto INT;
+        DECLARE @IdVariante INT;
+        DECLARE @Contador INT = 1;
+
+        DECLARE @Desc NVARCHAR(100);
+        DECLARE @PrecioUnidad DECIMAL(10,2);
+        DECLARE @PrecioMayor DECIMAL(10,2);
+        DECLARE @Stock INT;
+
+        IF NOT EXISTS (SELECT 1 FROM @ListaVariantes)
+        BEGIN
+            RAISERROR('Debe enviar al menos una variante.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        UPDATE SecuenciaProducto
+        SET UltimoNumero = UltimoNumero + 1
+        WHERE Id = 1;
+
+        SELECT @CodigoBase = RIGHT('0000000' + CAST(UltimoNumero AS VARCHAR(7)), 7)
+        FROM SecuenciaProducto
+        WHERE Id = 1;
+
+        INSERT INTO productos(
+            codigo,
+            nombre,
+            precio,
+            stock,
+            estado
+        )
+        SELECT
+            @CodigoBase,
+            @Nombre,
+            ISNULL((SELECT TOP 1 PrecioUnidad FROM @ListaVariantes), 1),
+            ISNULL((SELECT SUM(Stock) FROM @ListaVariantes), 0),
+            1;
+
+        SET @IdProducto = SCOPE_IDENTITY();
+
+        INSERT INTO ProductoInventario(
+            id_producto,
+            IdCategoria,
+            Descripcion,
+            CodigoBase,
+            TieneVariantes,
+            Estado
+        )
+        VALUES(
+            @IdProducto,
+            @IdCategoria,
+            @Descripcion,
+            @CodigoBase,
+            @TieneVariantes,
+            1
+        );
+
+        IF @TieneVariantes = 1
+        BEGIN
+            DECLARE cur CURSOR LOCAL FOR
+            SELECT Descripcion, PrecioUnidad, PrecioMayor, Stock
+            FROM @ListaVariantes;
+
+            OPEN cur;
+            FETCH NEXT FROM cur INTO @Desc, @PrecioUnidad, @PrecioMayor, @Stock;
+
+            WHILE @@FETCH_STATUS = 0
+            BEGIN
+                DECLARE @CodigoBarras CHAR(9);
+
+                SET @CodigoBarras = @CodigoBase + RIGHT('00' + CAST(@Contador AS VARCHAR(2)), 2);
+
+                INSERT INTO Variantes(
+                    id_producto,
+                    Descripcion,
+                    CodigoBarras,
+                    PrecioUnidad,
+                    PrecioMayor
+                )
+                VALUES(
+                    @IdProducto,
+                    @Desc,
+                    @CodigoBarras,
+                    @PrecioUnidad,
+                    @PrecioMayor
+                );
+
+                SET @IdVariante = SCOPE_IDENTITY();
+
+                INSERT INTO StockSucursal(IdVariante, TipoUbicacion, Stock)
+                VALUES(@IdVariante, 'ALMACEN', @Stock);
+
+                INSERT INTO StockSucursal(IdVariante, TipoUbicacion, Stock)
+                VALUES(@IdVariante, 'TIENDA', 0);
+
+                SET @Contador = @Contador + 1;
+
+                FETCH NEXT FROM cur INTO @Desc, @PrecioUnidad, @PrecioMayor, @Stock;
+            END
+
+            CLOSE cur;
+            DEALLOCATE cur;
+        END
+        ELSE
+        BEGIN
+            SELECT TOP 1
+                @PrecioUnidad = PrecioUnidad,
+                @PrecioMayor = PrecioMayor,
+                @Stock = Stock
+            FROM @ListaVariantes;
+
+            INSERT INTO Variantes(
+                id_producto,
+                Descripcion,
+                CodigoBarras,
+                PrecioUnidad,
+                PrecioMayor
+            )
+            VALUES(
+                @IdProducto,
+                'Única',
+                @CodigoBase + '01',
+                @PrecioUnidad,
+                @PrecioMayor
+            );
+
+            SET @IdVariante = SCOPE_IDENTITY();
+
+            INSERT INTO StockSucursal(IdVariante, TipoUbicacion, Stock)
+            VALUES(@IdVariante, 'ALMACEN', @Stock);
+
+            INSERT INTO StockSucursal(IdVariante, TipoUbicacion, Stock)
+            VALUES(@IdVariante, 'TIENDA', 0);
+        END
+
+        COMMIT TRANSACTION;
+
+        SELECT 
+            @IdProducto AS id_producto,
+            @CodigoBase AS CodigoBase;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END
+GO
+
+/*====================================================
+  LISTAR PRODUCTOS CON VARIANTES
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_ListarProductosConVariantes
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.id_producto,
+        p.codigo,
+        p.nombre,
+        pi.Descripcion,
+        pi.IdCategoria,
+        c.Nombre AS NombreCategoria,
+        pi.CodigoBase,
+        pi.TieneVariantes,
+        p.estado,
+        v.IdVariante,
+        v.Descripcion AS VarianteDescripcion,
+        v.CodigoBarras,
+        v.PrecioUnidad,
+        v.PrecioMayor,
+        ISNULL(sa.Stock, 0) AS StockAlmacen,
+        ISNULL(st.Stock, 0) AS StockTienda,
+        v.Estado AS VarianteEstado
+    FROM productos p
+    INNER JOIN ProductoInventario pi
+        ON pi.id_producto = p.id_producto
+    INNER JOIN Categorias c
+        ON c.IdCategoria = pi.IdCategoria
+    INNER JOIN Variantes v
+        ON v.id_producto = p.id_producto
+    LEFT JOIN StockSucursal sa
+        ON sa.IdVariante = v.IdVariante
+       AND sa.TipoUbicacion = 'ALMACEN'
+    LEFT JOIN StockSucursal st
+        ON st.IdVariante = v.IdVariante
+       AND st.TipoUbicacion = 'TIENDA'
+    WHERE p.estado = 1
+      AND pi.Estado = 1
+      AND v.Estado = 1
+    ORDER BY p.nombre, v.Descripcion;
+END
+GO
+
+/*====================================================
+  OBTENER PRODUCTO COMPLETO
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_ObtenerProductoCompleto
+    @IdProducto INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.id_producto,
+        p.codigo,
+        p.nombre,
+        pi.IdCategoria,
+        c.Nombre AS NombreCategoria,
+        pi.Descripcion,
+        pi.CodigoBase,
+        pi.TieneVariantes,
+        p.estado
+    FROM productos p
+    INNER JOIN ProductoInventario pi
+        ON pi.id_producto = p.id_producto
+    INNER JOIN Categorias c
+        ON c.IdCategoria = pi.IdCategoria
+    WHERE p.id_producto = @IdProducto;
+
+    SELECT
+        v.IdVariante,
+        v.Descripcion,
+        v.CodigoBarras,
+        v.PrecioUnidad,
+        v.PrecioMayor,
+        ISNULL(sa.Stock, 0) AS StockAlmacen,
+        ISNULL(st.Stock, 0) AS StockTienda,
+        v.Estado
+    FROM Variantes v
+    LEFT JOIN StockSucursal sa
+        ON sa.IdVariante = v.IdVariante
+       AND sa.TipoUbicacion = 'ALMACEN'
+    LEFT JOIN StockSucursal st
+        ON st.IdVariante = v.IdVariante
+       AND st.TipoUbicacion = 'TIENDA'
+    WHERE v.id_producto = @IdProducto
+      AND v.Estado = 1;
+END
+GO
+
+/*====================================================
+  EDITAR PRODUCTO Y VARIANTE
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_EditarProductoInventario
+    @IdProducto INT,
+    @Nombre NVARCHAR(150),
+    @IdCategoria INT,
+    @Descripcion NVARCHAR(300)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.productos
+    SET nombre = @Nombre
+    WHERE id_producto = @IdProducto;
+
+    UPDATE dbo.ProductoInventario
+    SET
+        IdCategoria = @IdCategoria,
+        Descripcion = @Descripcion
+    WHERE id_producto = @IdProducto;
+
+    SELECT 1 AS Resultado;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_EditarVariante
+    @IdVariante INT,
+    @Descripcion NVARCHAR(100),
+    @PrecioUnidad DECIMAL(10,2),
+    @PrecioMayor DECIMAL(10,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.Variantes
+    SET
+        Descripcion = @Descripcion,
+        PrecioUnidad = @PrecioUnidad,
+        PrecioMayor = @PrecioMayor
+    WHERE IdVariante = @IdVariante;
+
+    SELECT @@ROWCOUNT AS FilasActualizadas;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE sp_AgregarVarianteAProducto
+    @IdProducto INT,
+    @Descripcion NVARCHAR(100),
+    @PrecioUnidad DECIMAL(10,2),
+    @PrecioMayor DECIMAL(10,2),
+    @Stock INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @CodigoBase CHAR(7);
+        DECLARE @Correlativo INT;
+        DECLARE @CodigoBarras CHAR(9);
+        DECLARE @IdVariante INT;
+
+        SELECT @CodigoBase = CodigoBase
+        FROM ProductoInventario
+        WHERE id_producto = @IdProducto;
+
+        SELECT @Correlativo = COUNT(*) + 1
+        FROM Variantes
+        WHERE id_producto = @IdProducto;
+
+        SET @CodigoBarras = @CodigoBase + RIGHT('00' + CAST(@Correlativo AS VARCHAR(2)), 2);
+
+        INSERT INTO Variantes(
+            id_producto,
+            Descripcion,
+            CodigoBarras,
+            PrecioUnidad,
+            PrecioMayor
+        )
+        VALUES(
+            @IdProducto,
+            @Descripcion,
+            @CodigoBarras,
+            @PrecioUnidad,
+            @PrecioMayor
+        );
+
+        SET @IdVariante = SCOPE_IDENTITY();
+
+        INSERT INTO StockSucursal(IdVariante, TipoUbicacion, Stock)
+        VALUES(@IdVariante, 'ALMACEN', @Stock);
+
+        INSERT INTO StockSucursal(IdVariante, TipoUbicacion, Stock)
+        VALUES(@IdVariante, 'TIENDA', 0);
+
+        UPDATE productos
+        SET stock = stock + @Stock
+        WHERE id_producto = @IdProducto;
+
+        COMMIT TRANSACTION;
+
+        SELECT @IdVariante AS IdVariante, @CodigoBarras AS CodigoBarras;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_EditarVarianteProducto
+    @IdProducto INT,
+    @IdVariante INT,
+    @Descripcion NVARCHAR(150),
+    @PrecioUnidad DECIMAL(18, 2),
+    @PrecioMayor DECIMAL(18, 2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.Variantes
+    SET
+        Descripcion = @Descripcion,
+        PrecioUnidad = @PrecioUnidad,
+        PrecioMayor = @PrecioMayor
+    WHERE IdVariante = @IdVariante
+      AND IdProducto = @IdProducto;
+
+    SELECT @@ROWCOUNT AS FilasActualizadas;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarVariante
+    @IdVariante INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @IdProducto INT;
+        DECLARE @StockAlmacen INT = 0;
+        DECLARE @CantidadVariantes INT = 0;
+
+        -- Obtener el producto al que pertenece la variante.
+        SELECT
+            @IdProducto = id_producto
+        FROM dbo.Variantes
+        WHERE IdVariante = @IdVariante;
+
+        IF @IdProducto IS NULL
+        BEGIN
+            THROW 50001,
+                  'La variante seleccionada no existe.',
+                  1;
+        END;
+
+        -- Un producto debe conservar al menos una variante.
+        SELECT
+            @CantidadVariantes = COUNT(*)
+        FROM dbo.Variantes
+        WHERE id_producto = @IdProducto;
+
+        IF @CantidadVariantes <= 1
+        BEGIN
+            THROW 50002,
+                  'No se puede eliminar la única variante del producto.',
+                  1;
+        END;
+
+        -- Obtener el stock que se descontará del total del producto.
+        SELECT
+            @StockAlmacen = ISNULL(Stock, 0)
+        FROM dbo.StockSucursal
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'ALMACEN';
+
+        -- Eliminar primero el stock relacionado.
+        DELETE FROM dbo.StockSucursal
+        WHERE IdVariante = @IdVariante;
+
+        -- Eliminar la variante.
+        DELETE FROM dbo.Variantes
+        WHERE IdVariante = @IdVariante;
+
+        -- Actualizar el stock general del producto.
+        UPDATE dbo.productos
+        SET stock =
+            CASE
+                WHEN ISNULL(stock, 0) - @StockAlmacen < 0
+                    THEN 0
+                ELSE ISNULL(stock, 0) - @StockAlmacen
+            END
+        WHERE id_producto = @IdProducto;
+
+        COMMIT TRANSACTION;
+
+        SELECT 1 AS Resultado;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_DesactivarProductoInventario
+    @IdProducto INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Comprobar que el producto existe y está activo.
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.productos
+            WHERE id_producto = @IdProducto
+              AND estado = 1
+        )
+        BEGIN
+            THROW 50020,
+                  'El producto no existe o ya fue eliminado.',
+                  1;
+        END;
+
+        -- Desactivar todas sus variantes.
+        UPDATE dbo.Variantes
+        SET Estado = 0
+        WHERE id_producto = @IdProducto;
+
+        -- Desactivar el producto principal.
+        UPDATE dbo.productos
+        SET estado = 0
+        WHERE id_producto = @IdProducto;
+
+        COMMIT TRANSACTION;
+
+        SELECT 1 AS Resultado;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+/*====================================================
+  STOCK
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_ActualizarStockAlmacen
+    @IdVariante INT,
+    @CantidadIngreso INT,
+    @CantidadSalida INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @StockActual INT;
+        DECLARE @IdProducto INT;
+
+        SELECT @StockActual = Stock
+        FROM StockSucursal
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'ALMACEN';
+
+        IF @StockActual IS NULL
+        BEGIN
+            RAISERROR('No existe stock de almacén para esta variante.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        IF @CantidadSalida > @StockActual
+        BEGIN
+            RAISERROR('No puede retirar más del stock disponible en almacén.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        UPDATE StockSucursal
+        SET Stock = Stock + @CantidadIngreso - @CantidadSalida
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'ALMACEN';
+
+        SELECT @IdProducto = id_producto
+        FROM Variantes
+        WHERE IdVariante = @IdVariante;
+
+        UPDATE productos
+        SET stock = (
+            SELECT ISNULL(SUM(Stock), 0)
+            FROM StockSucursal ss
+            INNER JOIN Variantes v ON v.IdVariante = ss.IdVariante
+            WHERE v.id_producto = @IdProducto
+        )
+        WHERE id_producto = @IdProducto;
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE sp_TransferirStockATienda
+    @IdVariante INT,
+    @Cantidad INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @StockAlmacen INT;
+
+        SELECT @StockAlmacen = Stock
+        FROM StockSucursal
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'ALMACEN';
+
+        IF @StockAlmacen IS NULL
+        BEGIN
+            RAISERROR('No existe stock en almacén para esta variante.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        IF @Cantidad <= 0
+        BEGIN
+            RAISERROR('La cantidad debe ser mayor a cero.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        IF @Cantidad > @StockAlmacen
+        BEGIN
+            RAISERROR('Stock insuficiente en almacén.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        UPDATE StockSucursal
+        SET Stock = Stock - @Cantidad
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'ALMACEN';
+
+        UPDATE StockSucursal
+        SET Stock = Stock + @Cantidad
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'TIENDA';
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END
+GO
+
+/*====================================================
+  BUSCAR POR CÓDIGO DE BARRAS
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_BuscarPorCodigoBarras
+    @CodigoBarras VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1
+        p.id_producto,
+        p.nombre AS NombreProducto,
+        c.Nombre AS Categoria,
+        v.IdVariante,
+        v.Descripcion AS Variante,
+        v.CodigoBarras,
+        v.PrecioUnidad,
+        v.PrecioMayor,
+        ISNULL(sa.Stock, 0) AS StockAlmacen,
+        ISNULL(st.Stock, 0) AS StockTienda
+    FROM Variantes v
+    INNER JOIN productos p
+        ON p.id_producto = v.id_producto
+    INNER JOIN ProductoInventario pi
+        ON pi.id_producto = p.id_producto
+    INNER JOIN Categorias c
+        ON c.IdCategoria = pi.IdCategoria
+    LEFT JOIN StockSucursal sa
+        ON sa.IdVariante = v.IdVariante
+       AND sa.TipoUbicacion = 'ALMACEN'
+    LEFT JOIN StockSucursal st
+        ON st.IdVariante = v.IdVariante
+       AND st.TipoUbicacion = 'TIENDA'
+    WHERE v.CodigoBarras = @CodigoBarras
+      AND p.estado = 1
+      AND v.Estado = 1;
+END
+GO
+
+/*====================================================
+  POS - BUSCAR PRODUCTOS
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_POS_BuscarProductos
+    @Texto VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 20
+        p.id_producto,
+        v.IdVariante,
+        p.nombre,
+        v.Descripcion AS Variante,
+        c.Nombre AS Categoria,
+        v.CodigoBarras AS CodigoBarra,
+        v.PrecioUnidad,
+        v.PrecioMayor,
+        ISNULL(st.Stock, 0) AS Stock
+    FROM productos p
+    INNER JOIN ProductoInventario pi
+        ON pi.id_producto = p.id_producto
+    INNER JOIN Categorias c
+        ON c.IdCategoria = pi.IdCategoria
+    INNER JOIN Variantes v
+        ON v.id_producto = p.id_producto
+    LEFT JOIN StockSucursal st
+        ON st.IdVariante = v.IdVariante
+       AND st.TipoUbicacion = 'TIENDA'
+    WHERE p.estado = 1
+      AND pi.Estado = 1
+      AND v.Estado = 1
+      AND ISNULL(st.Stock, 0) > 0
+      AND (
+            p.nombre LIKE '%' + @Texto + '%'
+         OR v.Descripcion LIKE '%' + @Texto + '%'
+         OR v.CodigoBarras LIKE '%' + @Texto + '%'
+         OR c.Nombre LIKE '%' + @Texto + '%'
+      )
+    ORDER BY p.nombre;
+END
+GO
+
+CREATE OR ALTER PROCEDURE sp_POS_ObtenerProductoPorCodigo
+    @CodigoBarra VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1
+        p.id_producto,
+        v.IdVariante,
+        p.nombre,
+        v.Descripcion AS Variante,
+        c.Nombre AS Categoria,
+        v.CodigoBarras AS CodigoBarra,
+        v.PrecioUnidad,
+        v.PrecioMayor,
+        ISNULL(st.Stock, 0) AS Stock
+    FROM productos p
+    INNER JOIN ProductoInventario pi
+        ON pi.id_producto = p.id_producto
+    INNER JOIN Categorias c
+        ON c.IdCategoria = pi.IdCategoria
+    INNER JOIN Variantes v
+        ON v.id_producto = p.id_producto
+    LEFT JOIN StockSucursal st
+        ON st.IdVariante = v.IdVariante
+       AND st.TipoUbicacion = 'TIENDA'
+    WHERE p.estado = 1
+      AND pi.Estado = 1
+      AND v.Estado = 1
+      AND ISNULL(st.Stock, 0) > 0
+      AND v.CodigoBarras = @CodigoBarra;
+END
+GO
+
+/*====================================================
+  POS - REGISTRAR VENTA
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_POS_RegistrarVenta
+    @id_usuario INT,
+    @TipoDocumento VARCHAR(20),
+    @NumeroDocumento VARCHAR(20) = NULL,
+    @NombreCliente VARCHAR(150),
+    @MetodoPago VARCHAR(30),
+    @SubTotal DECIMAL(10,2),
+    @IGV DECIMAL(10,2),
+    @Total DECIMAL(10,2),
+    @Detalle TVP_DetalleVentaPOS READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @IdClientePOS INT;
+        DECLARE @IdVentaPOS INT;
+        DECLARE @NumeroVenta VARCHAR(30);
+        DECLARE @IdVentaSistema INT;
+
+        IF @NombreCliente IS NULL OR LTRIM(RTRIM(@NombreCliente)) = ''
+            SET @NombreCliente = 'Otros clientes';
+
+        IF @TipoDocumento IS NULL OR LTRIM(RTRIM(@TipoDocumento)) = ''
+            SET @TipoDocumento = 'OTROS';
+
+        IF NOT EXISTS (SELECT 1 FROM @Detalle)
+        BEGIN
+            RAISERROR('La venta no tiene productos.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        IF EXISTS (
+            SELECT 1
+            FROM @Detalle d
+            LEFT JOIN StockSucursal st
+                ON st.IdVariante = d.IdVariante
+               AND st.TipoUbicacion = 'TIENDA'
+            WHERE ISNULL(st.Stock, 0) < d.Cantidad
+        )
+        BEGIN
+            RAISERROR('Stock insuficiente en tienda.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        INSERT INTO ClientePOS(
+            TipoDocumento,
+            NumeroDocumento,
+            NombreCompleto
+        )
+        VALUES(
+            @TipoDocumento,
+            @NumeroDocumento,
+            @NombreCliente
+        );
+
+        SET @IdClientePOS = SCOPE_IDENTITY();
+
+        SET @NumeroVenta =
+            'NV-' +
+            CONVERT(VARCHAR(8), GETDATE(), 112) +
+            '-' +
+            RIGHT('00000' + CAST(NEXT VALUE FOR SeqVentaPOS AS VARCHAR(10)), 5);
+
+        INSERT INTO VentaPOS(
+            NumeroVenta,
+            IdClientePOS,
+            id_usuario,
+            MetodoPago,
+            Subtotal,
+            IGV,
+            Total,
+            Estado,
+            FechaVenta
+        )
+        VALUES(
+            @NumeroVenta,
+            @IdClientePOS,
+            @id_usuario,
+            @MetodoPago,
+            @SubTotal,
+            @IGV,
+            @Total,
+            'COMPLETADA',
+            GETDATE()
+        );
+
+        SET @IdVentaPOS = SCOPE_IDENTITY();
+
+        INSERT INTO DetalleVentaPOS(
+            IdVenta,
+            id_producto,
+            IdVariante,
+            NombreProducto,
+            Categoria,
+            CodigoBarra,
+            TipoPrecio,
+            PrecioUnitario,
+            Cantidad,
+            Descuento,
+            TotalLinea
+        )
+        SELECT
+            @IdVentaPOS,
+            IdProducto,
+            IdVariante,
+            NombreProducto,
+            Categoria,
+            CodigoBarra,
+            TipoPrecio,
+            PrecioUnitario,
+            Cantidad,
+            Descuento,
+            TotalLinea
+        FROM @Detalle;
+
+        UPDATE st
+        SET st.Stock = st.Stock - d.Cantidad
+        FROM StockSucursal st
+        INNER JOIN @Detalle d
+            ON d.IdVariante = st.IdVariante
+        WHERE st.TipoUbicacion = 'TIENDA';
+
+        UPDATE p
+        SET p.stock = (
+            SELECT ISNULL(SUM(ss.Stock), 0)
+            FROM StockSucursal ss
+            INNER JOIN Variantes v
+                ON v.IdVariante = ss.IdVariante
+            WHERE v.id_producto = p.id_producto
+        )
+        FROM productos p
+        WHERE p.id_producto IN (
+            SELECT DISTINCT IdProducto FROM @Detalle
+        );
+
+        INSERT INTO ventas(
+            id_usuario,
+            fecha,
+            total
+        )
+        VALUES(
+            @id_usuario,
+            GETDATE(),
+            @Total
+        );
+
+        SET @IdVentaSistema = SCOPE_IDENTITY();
+
+        INSERT INTO detalle_venta(
+            id_venta,
+            id_producto,
+            cantidad,
+            precio
+        )
+        SELECT
+            @IdVentaSistema,
+            IdProducto,
+            SUM(Cantidad),
+            MAX(PrecioUnitario)
+        FROM @Detalle
+        GROUP BY IdProducto;
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdVentaPOS AS IdVentaPOS,
+            @NumeroVenta AS NumeroVenta,
+            @IdVentaSistema AS IdVentaSistema;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END
+GO
+
+/*====================================================
+  POS - PRODUCTOS FRECUENTES DEL DÍA
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_POS_ProductosFrecuentesDia
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 5
+        d.id_producto AS IdProducto,
+        d.IdVariante,
+
+        p.nombre AS Nombre,
+
+        c.Nombre AS Categoria,
+
+        v.Descripcion AS Variante,
+
+        v.CodigoBarras AS CodigoBarra,
+
+        v.PrecioUnidad,
+
+        ISNULL(
+            v.PrecioMayor,
+            0
+        ) AS PrecioMayor,
+
+        ISNULL(
+            st.Stock,
+            0
+        ) AS Stock,
+
+        SUM(d.Cantidad) AS VecesVendido
+
+    FROM dbo.DetalleVentaPOS d
+
+    INNER JOIN dbo.VentaPOS venta
+        ON venta.IdVenta = d.IdVenta
+
+    INNER JOIN dbo.Variantes v
+        ON v.IdVariante = d.IdVariante
+
+    INNER JOIN dbo.productos p
+        ON p.id_producto = d.id_producto
+
+    INNER JOIN dbo.ProductoInventario pi
+        ON pi.id_producto = p.id_producto
+
+    INNER JOIN dbo.Categorias c
+        ON c.IdCategoria = pi.IdCategoria
+
+    LEFT JOIN dbo.StockSucursal st
+        ON st.IdVariante = d.IdVariante
+       AND st.TipoUbicacion = 'TIENDA'
+
+    WHERE CAST(venta.FechaVenta AS DATE) =
+          CAST(GETDATE() AS DATE)
+
+      AND venta.Estado = 'COMPLETADA'
+
+      AND p.estado = 1
+
+      AND pi.Estado = 1
+
+      AND v.Estado = 1
+
+      AND ISNULL(st.Stock, 0) > 0
+
+    GROUP BY
+        d.id_producto,
+        d.IdVariante,
+        p.nombre,
+        c.Nombre,
+        v.Descripcion,
+        v.CodigoBarras,
+        v.PrecioUnidad,
+        v.PrecioMayor,
+        st.Stock
+
+    ORDER BY
+        SUM(d.Cantidad) DESC,
+        p.nombre;
+END;
+GO
+/*====================================================
+  POS - RESUMEN ADMIN DEL DÍA
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_POS_ResumenAdminDia
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        ISNULL(SUM(Total), 0) AS VentasDelDia,
+        COUNT(*) AS NumeroTransacciones
+    FROM VentaPOS
+    WHERE CAST(FechaVenta AS DATE) = CAST(GETDATE() AS DATE)
+      AND Estado = 'COMPLETADA';
+END
+GO
+
+/*====================================================
+  REPORTES
+====================================================*/
+CREATE OR ALTER PROCEDURE sp_Reporte_Dashboard
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        ISNULL(SUM(CASE 
+            WHEN CAST(FechaVenta AS DATE) = CAST(GETDATE() AS DATE)
+            THEN Total ELSE 0 END), 0) AS VentasHoy,
+
+        ISNULL(COUNT(CASE
+            WHEN CAST(FechaVenta AS DATE) = CAST(GETDATE() AS DATE)
+            THEN 1 END), 0) AS CantidadVentasHoy,
+
+        ISNULL((
+            SELECT SUM(d.Cantidad)
+            FROM DetalleVentaPOS d
+            INNER JOIN VentaPOS v ON v.IdVenta = d.IdVenta
+            WHERE CAST(v.FechaVenta AS DATE) = CAST(GETDATE() AS DATE)
+              AND v.Estado = 'COMPLETADA'
+        ), 0) AS ProductosVendidosHoy,
+
+        ISNULL((
+            SELECT COUNT(*)
+            FROM StockSucursal
+            WHERE TipoUbicacion = 'TIENDA'
+              AND Stock <= 5
+        ), 0) AS StockBajo
+    FROM VentaPOS
+    WHERE Estado = 'COMPLETADA';
+END
+GO
+
+CREATE OR ALTER PROCEDURE sp_Reporte_Ventas
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        CAST(FechaVenta AS DATE) AS Fecha,
+        COUNT(*) AS CantidadVentas,
+        SUM(Subtotal) AS Subtotal,
+        SUM(IGV) AS IGV,
+        SUM(Total) AS Total
+    FROM VentaPOS
+    WHERE Estado = 'COMPLETADA'
+      AND (@FechaInicio IS NULL OR CAST(FechaVenta AS DATE) >= @FechaInicio)
+      AND (@FechaFin IS NULL OR CAST(FechaVenta AS DATE) <= @FechaFin)
+    GROUP BY CAST(FechaVenta AS DATE)
+    ORDER BY Fecha;
+END
+GO
+
+CREATE OR ALTER PROCEDURE sp_Reporte_ProductosMasVendidos
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL,
+    @Texto VARCHAR(150) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        d.id_producto,
+        d.IdVariante,
+        d.NombreProducto,
+        d.Categoria,
+        d.CodigoBarra,
+        SUM(d.Cantidad) AS CantidadVendida,
+        SUM(d.TotalLinea) AS TotalGenerado
+    FROM DetalleVentaPOS d
+    INNER JOIN VentaPOS v
+        ON v.IdVenta = d.IdVenta
+    WHERE v.Estado = 'COMPLETADA'
+      AND (@FechaInicio IS NULL OR CAST(v.FechaVenta AS DATE) >= @FechaInicio)
+      AND (@FechaFin IS NULL OR CAST(v.FechaVenta AS DATE) <= @FechaFin)
+      AND (
+            @Texto IS NULL
+         OR d.NombreProducto LIKE '%' + @Texto + '%'
+         OR d.Categoria LIKE '%' + @Texto + '%'
+         OR d.CodigoBarra LIKE '%' + @Texto + '%'
+      )
+    GROUP BY
+        d.id_producto,
+        d.IdVariante,
+        d.NombreProducto,
+        d.Categoria,
+        d.CodigoBarra
+    ORDER BY CantidadVendida DESC;
+END
+GO
+
+/*=========================================
+  REGISTRAR PRODUCTO
+=========================================*/
+CREATE PROCEDURE sp_registrar_producto
+    @codigo VARCHAR(50),
+    @nombre VARCHAR(150),
+    @precio DECIMAL(10,2),
+    @stock INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO productos(
+        codigo,
+        nombre,
+        precio,
+        stock
+    )
+    VALUES(
+        @codigo,
+        @nombre,
+        @precio,
+        @stock
+    );
+END;
+GO
+
+/*=========================================
+  ACTUALIZAR PRODUCTO
+=========================================*/
+CREATE PROCEDURE sp_actualizar_producto
+    @id_producto INT,
+    @codigo VARCHAR(50),
+    @nombre VARCHAR(150),
+    @precio DECIMAL(10,2),
+    @stock INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE productos
+    SET
+        codigo = @codigo,
+        nombre = @nombre,
+        precio = @precio,
+        stock = @stock
+    WHERE id_producto = @id_producto;
+END;
+GO
+
+/*=========================================
+  ELIMINAR PRODUCTO
+=========================================*/
+CREATE PROCEDURE sp_eliminar_producto
+    @id_producto INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM productos
+    WHERE id_producto = @id_producto;
+END;
+GO
+
+/*=========================================
+  LISTAR PRODUCTOS
+=========================================*/
+CREATE PROCEDURE sp_listar_productos
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT *
+    FROM productos
+    ORDER BY nombre;
+END;
+GO
+
+/*=========================================
+  BUSCAR PRODUCTO
+=========================================*/
+CREATE PROCEDURE sp_buscar_producto
+    @texto VARCHAR(150)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT *
+    FROM productos
+    WHERE nombre LIKE '%' + @texto + '%'
+       OR codigo LIKE '%' + @texto + '%';
+END;
+GO
+
+/*====================================================
+  ABRIR CAJA
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_abrir_caja
+    @id_usuario INT,
+    @monto_inicial DECIMAL(10,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @IdCaja INT;
+
+        /* Validar trabajador. */
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @id_usuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 51400,
+                  'Debe seleccionar un trabajador activo para abrir la caja.',
+                  1;
+        END;
+
+        /* Validar monto inicial. */
+        IF @monto_inicial < 0
+        BEGIN
+            THROW 51401,
+                  'El monto inicial no puede ser negativo.',
+                  1;
+        END;
+
+        /*
+         * Solo permitiremos una caja abierta
+         * en todo el sistema.
+         */
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.caja
+                WITH (UPDLOCK, HOLDLOCK)
+            WHERE estado = 'ABIERTA'
+        )
+        BEGIN
+            THROW 51402,
+                  'Ya existe una caja abierta.',
+                  1;
+        END;
+
+        INSERT INTO dbo.caja
+        (
+            id_usuario,
+            fecha_apertura,
+            monto_inicial,
+            fecha_cierre,
+            monto_final,
+            estado
+        )
+        VALUES
+        (
+            @id_usuario,
+            GETDATE(),
+            @monto_inicial,
+            NULL,
+            NULL,
+            'ABIERTA'
+        );
+
+        SET @IdCaja =
+            SCOPE_IDENTITY();
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdCaja AS IdCaja,
+            @id_usuario AS IdUsuario,
+            @monto_inicial AS MontoInicial,
+            GETDATE() AS FechaApertura,
+            'ABIERTA' AS Estado;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+/*====================================================
+  OBTENER CAJA ABIERTA
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_Caja_ObtenerAbierta
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1
+        caja.id_caja AS IdCaja,
+
+        caja.id_usuario AS IdUsuarioApertura,
+
+        usuario.nombre AS NombreTrabajadorApertura,
+
+        caja.fecha_apertura AS FechaApertura,
+
+        caja.monto_inicial AS MontoInicial,
+
+        ISNULL
+        (
+            SUM
+            (
+                CASE
+                    WHEN movimiento.TipoMovimiento = 'INGRESO'
+                     AND movimiento.MetodoPago = 'EFECTIVO'
+                        THEN movimiento.Monto
+
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS IngresosEfectivo,
+
+        ISNULL
+        (
+            SUM
+            (
+                CASE
+                    WHEN movimiento.TipoMovimiento = 'EGRESO'
+                     AND movimiento.MetodoPago = 'EFECTIVO'
+                        THEN movimiento.Monto
+
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS EgresosEfectivo,
+
+        caja.monto_inicial
+        +
+        ISNULL
+        (
+            SUM
+            (
+                CASE
+                    WHEN movimiento.TipoMovimiento = 'INGRESO'
+                     AND movimiento.MetodoPago = 'EFECTIVO'
+                        THEN movimiento.Monto
+
+                    WHEN movimiento.TipoMovimiento = 'EGRESO'
+                     AND movimiento.MetodoPago = 'EFECTIVO'
+                        THEN -movimiento.Monto
+
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS SaldoActual,
+
+        caja.estado AS Estado
+
+    FROM dbo.caja caja
+
+    INNER JOIN dbo.usuarios usuario
+        ON usuario.id_usuario =
+           caja.id_usuario
+
+    LEFT JOIN dbo.MovimientoCaja movimiento
+        ON movimiento.IdCaja =
+           caja.id_caja
+
+    WHERE caja.estado =
+          'ABIERTA'
+
+    GROUP BY
+        caja.id_caja,
+        caja.id_usuario,
+        usuario.nombre,
+        caja.fecha_apertura,
+        caja.monto_inicial,
+        caja.estado
+
+    ORDER BY
+        caja.fecha_apertura DESC;
+END;
+GO
+
+/*====================================================
+  CERRAR CAJA
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_cerrar_caja
+    @id_caja INT,
+    @id_usuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @Estado VARCHAR(20);
+
+        DECLARE @MontoInicial DECIMAL(10,2);
+
+        DECLARE @IngresosEfectivo DECIMAL(10,2) = 0;
+
+        DECLARE @EgresosEfectivo DECIMAL(10,2) = 0;
+
+        DECLARE @MontoFinal DECIMAL(10,2);
+
+        /* Validar trabajador. */
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @id_usuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 51410,
+                  'Debe seleccionar un trabajador activo para cerrar la caja.',
+                  1;
+        END;
+
+        /* Bloquear y obtener la caja. */
+        SELECT
+            @Estado =
+                estado,
+
+            @MontoInicial =
+                monto_inicial
+
+        FROM dbo.caja
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE id_caja =
+              @id_caja;
+
+        IF @Estado IS NULL
+        BEGIN
+            THROW 51411,
+                  'La caja seleccionada no existe.',
+                  1;
+        END;
+
+        IF @Estado <> 'ABIERTA'
+        BEGIN
+            THROW 51412,
+                  'La caja ya se encuentra cerrada.',
+                  1;
+        END;
+
+        /* Obtener movimientos físicos de efectivo. */
+        SELECT
+            @IngresosEfectivo =
+                ISNULL
+                (
+                    SUM
+                    (
+                        CASE
+                            WHEN TipoMovimiento = 'INGRESO'
+                             AND MetodoPago = 'EFECTIVO'
+                                THEN Monto
+
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ),
+
+            @EgresosEfectivo =
+                ISNULL
+                (
+                    SUM
+                    (
+                        CASE
+                            WHEN TipoMovimiento = 'EGRESO'
+                             AND MetodoPago = 'EFECTIVO'
+                                THEN Monto
+
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+
+        FROM dbo.MovimientoCaja
+
+        WHERE IdCaja =
+              @id_caja;
+
+        SET @MontoFinal =
+            @MontoInicial
+            +
+            @IngresosEfectivo
+            -
+            @EgresosEfectivo;
+
+        UPDATE dbo.caja
+        SET
+            fecha_cierre =
+                GETDATE(),
+
+            monto_final =
+                @MontoFinal,
+
+            estado =
+                'CERRADA'
+
+        WHERE id_caja =
+              @id_caja;
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @id_caja AS IdCaja,
+
+            @MontoInicial AS MontoInicial,
+
+            @IngresosEfectivo AS IngresosEfectivo,
+
+            @EgresosEfectivo AS EgresosEfectivo,
+
+            @MontoFinal AS MontoFinal,
+
+            GETDATE() AS FechaCierre,
+
+            'CERRADA' AS Estado;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+/*====================================================
+  REGISTRAR PAGO DE CRÉDITO
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_RegistrarPago
+    @IdPrestamoCredito INT,
+    @IdUsuario INT,
+    @MetodoPago VARCHAR(20),
+    @Observacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @TipoOperacion VARCHAR(15);
+
+        DECLARE @Estado VARCHAR(20);
+
+        DECLARE @StockDescontado BIT;
+
+        DECLARE @NumeroOperacion VARCHAR(30);
+
+        DECLARE @ClienteTienda NVARCHAR(150);
+
+        DECLARE @NombreProducto VARCHAR(150);
+
+        DECLARE @Variante NVARCHAR(100);
+
+        DECLARE @Cantidad INT;
+
+        DECLARE @PrecioUnitario DECIMAL(10,2);
+
+        DECLARE @Total DECIMAL(10,2);
+
+        DECLARE @NumeroPago VARCHAR(30);
+
+        DECLARE @IdPagoCredito INT;
+
+        DECLARE @IdCaja INT = NULL;
+
+        DECLARE @CantidadCajasAbiertas INT = 0;
+
+        SET @MetodoPago =
+            UPPER
+            (
+                LTRIM
+                (
+                    RTRIM
+                    (
+                        ISNULL
+                        (
+                            @MetodoPago,
+                            ''
+                        )
+                    )
+                )
+            );
+
+        SET @Observacion =
+            NULLIF
+            (
+                LTRIM
+                (
+                    RTRIM
+                    (
+                        ISNULL
+                        (
+                            @Observacion,
+                            ''
+                        )
+                    )
+                ),
+                ''
+            );
+
+        /*============================================
+          VALIDAR TRABAJADOR
+        ============================================*/
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @IdUsuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 51500,
+                  'Debe seleccionar un trabajador activo.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR MÉTODO DE PAGO
+        ============================================*/
+
+        IF @MetodoPago NOT IN
+        (
+            'EFECTIVO',
+            'YAPE'
+        )
+        BEGIN
+            THROW 51501,
+                  'El método de pago debe ser EFECTIVO o YAPE.',
+                  1;
+        END;
+
+        /*============================================
+          BLOQUEAR Y OBTENER LA COBRANZA
+        ============================================*/
+
+        SELECT
+            @TipoOperacion =
+                TipoOperacion,
+
+            @Estado =
+                Estado,
+
+            @StockDescontado =
+                StockDescontado,
+
+            @NumeroOperacion =
+                NumeroOperacion,
+
+            @ClienteTienda =
+                ClienteTienda,
+
+            @NombreProducto =
+                NombreProducto,
+
+            @Variante =
+                VarianteDescripcion,
+
+            @Cantidad =
+                Cantidad,
+
+            @PrecioUnitario =
+                PrecioUnitario,
+
+            @Total =
+                Total
+
+        FROM dbo.PrestamoCredito
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        IF @TipoOperacion IS NULL
+        BEGIN
+            THROW 51502,
+                  'La cobranza seleccionada no existe.',
+                  1;
+        END;
+
+        IF @TipoOperacion <> 'CREDITO'
+        BEGIN
+            THROW 51503,
+                  'El registro seleccionado no pertenece a cobranzas.',
+                  1;
+        END;
+
+        IF @Estado <> 'PENDIENTE'
+        BEGIN
+            THROW 51504,
+                  'La cobranza ya fue completada.',
+                  1;
+        END;
+
+        IF @StockDescontado <> 1
+        BEGIN
+            THROW 51505,
+                  'La cobranza no tiene un stock descontado válido.',
+                  1;
+        END;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.PagoCredito
+            WHERE IdPrestamoCredito =
+                  @IdPrestamoCredito
+        )
+        BEGIN
+            THROW 51506,
+                  'Esta cobranza ya tiene un pago registrado.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR CAJA PARA PAGO EN EFECTIVO
+        ============================================*/
+
+        IF @MetodoPago = 'EFECTIVO'
+        BEGIN
+            SELECT
+                @CantidadCajasAbiertas =
+                    COUNT(*)
+
+            FROM dbo.caja
+                WITH (UPDLOCK, HOLDLOCK)
+
+            WHERE estado = 'ABIERTA';
+
+            IF @CantidadCajasAbiertas = 0
+            BEGIN
+                THROW 51507,
+                      'Debe abrir una caja antes de registrar un pago en efectivo.',
+                      1;
+            END;
+
+            IF @CantidadCajasAbiertas > 1
+            BEGIN
+                THROW 51508,
+                      'Existe más de una caja abierta. Debe regularizar la caja antes de cobrar.',
+                      1;
+            END;
+
+            SELECT TOP 1
+                @IdCaja =
+                    id_caja
+
+            FROM dbo.caja
+
+            WHERE estado = 'ABIERTA'
+
+            ORDER BY
+                fecha_apertura DESC;
+        END;
+
+        /*============================================
+          GENERAR NÚMERO DE PAGO
+        ============================================*/
+
+        SET @NumeroPago =
+            'PCOB-' +
+            CONVERT
+            (
+                VARCHAR(8),
+                GETDATE(),
+                112
+            ) +
+            '-' +
+            RIGHT
+            (
+                '00000' +
+                CAST
+                (
+                    NEXT VALUE FOR
+                    dbo.SeqPagoCredito
+                    AS VARCHAR(10)
+                ),
+                5
+            );
+
+        /*============================================
+          REGISTRAR PAGO
+        ============================================*/
+
+        INSERT INTO dbo.PagoCredito
+        (
+            NumeroPago,
+            IdPrestamoCredito,
+            IdUsuario,
+            IdCaja,
+            MetodoPago,
+            Monto,
+            FechaPago,
+            Observacion
+        )
+        VALUES
+        (
+            @NumeroPago,
+            @IdPrestamoCredito,
+            @IdUsuario,
+            @IdCaja,
+            @MetodoPago,
+            @Total,
+            GETDATE(),
+            @Observacion
+        );
+
+        SET @IdPagoCredito =
+            SCOPE_IDENTITY();
+
+        /*============================================
+          REGISTRAR INGRESO EN CAJA
+        ============================================*/
+
+        IF @MetodoPago = 'EFECTIVO'
+        BEGIN
+            INSERT INTO dbo.MovimientoCaja
+            (
+                IdCaja,
+                IdUsuario,
+                TipoMovimiento,
+                Origen,
+                Concepto,
+                Monto,
+                MetodoPago,
+                IdPagoCredito,
+                FechaMovimiento,
+                Observacion
+            )
+            VALUES
+            (
+                @IdCaja,
+                @IdUsuario,
+                'INGRESO',
+                'CREDITO',
+
+                CONCAT
+                (
+                    'Pago de cobranza ',
+                    @NumeroOperacion,
+                    ' - ',
+                    @ClienteTienda
+                ),
+
+                @Total,
+                'EFECTIVO',
+                @IdPagoCredito,
+                GETDATE(),
+                @Observacion
+            );
+        END;
+
+        /*============================================
+          COMPLETAR COBRANZA
+        ============================================*/
+
+        UPDATE dbo.PrestamoCredito
+        SET
+            Estado =
+                'COMPLETADO',
+
+            AccionFinal =
+                'PAGO',
+
+            FechaFinalizacion =
+                GETDATE(),
+
+            MetodoPago =
+                @MetodoPago,
+
+            IdUsuarioUltimaAccion =
+                @IdUsuario
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        /*============================================
+          REGISTRAR HISTORIAL
+        ============================================*/
+
+        INSERT INTO dbo.MovimientoPrestamoCredito
+        (
+            IdPrestamoCredito,
+            TipoMovimiento,
+            TipoOperacionAnterior,
+            TipoOperacionNuevo,
+            EstadoAnterior,
+            EstadoNuevo,
+            IdUsuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdPrestamoCredito,
+            'PAGO',
+            'CREDITO',
+            'CREDITO',
+            'PENDIENTE',
+            'COMPLETADO',
+            @IdUsuario,
+
+            CONCAT
+            (
+                'Pago registrado mediante ',
+                @MetodoPago,
+
+                CASE
+                    WHEN @Observacion IS NULL
+                        THEN ''
+                    ELSE CONCAT
+                    (
+                        '. ',
+                        @Observacion
+                    )
+                END
+            )
+        );
+
+        COMMIT TRANSACTION;
+
+        /*============================================
+          RESULTADO PARA WPF
+        ============================================*/
+
+        SELECT
+            @IdPrestamoCredito
+                AS IdPrestamoCredito,
+
+            @IdPagoCredito
+                AS IdPagoCredito,
+
+            @NumeroOperacion
+                AS NumeroOperacion,
+
+            @NumeroPago
+                AS NumeroPago,
+
+            @ClienteTienda
+                AS ClienteTienda,
+
+            @NombreProducto
+                AS NombreProducto,
+
+            @Variante
+                AS Variante,
+
+            @Cantidad
+                AS Cantidad,
+
+            @PrecioUnitario
+                AS PrecioUnitario,
+
+            @Total
+                AS TotalPagado,
+
+            @MetodoPago
+                AS MetodoPago,
+
+            @IdCaja
+                AS IdCaja,
+
+            GETDATE()
+                AS FechaPago,
+
+            'COMPLETADO'
+                AS Estado;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+/*====================================================
+  OBTENER NOTA DE COBRANZA
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ObtenerBoletaPago
+    @IdPrestamoCredito INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        pago.IdPagoCredito,
+
+        pago.NumeroPago,
+
+        pago.FechaPago,
+
+        pago.MetodoPago,
+
+        pago.Monto AS TotalPagado,
+
+        pago.IdCaja,
+
+        operacion.IdPrestamoCredito,
+
+        operacion.NumeroOperacion,
+
+        operacion.ClienteTienda,
+
+        operacion.NombreProducto,
+
+        operacion.VarianteDescripcion
+            AS Variante,
+
+        operacion.CodigoBarra,
+
+        operacion.Cantidad,
+
+        operacion.TipoPrecio,
+
+        operacion.PrecioUnitario,
+
+        operacion.Total,
+
+        operacion.Estado,
+
+        operacion.FechaRegistro,
+
+        operacion.FechaPagoEsperada,
+
+        usuario.id_usuario AS IdUsuario,
+
+        usuario.nombre AS NombreTrabajador,
+
+        usuario.usuario AS UsuarioTrabajador,
+
+        rol.nombre AS RolTrabajador,
+
+        pago.Observacion
+
+    FROM dbo.PagoCredito pago
+
+    INNER JOIN dbo.PrestamoCredito operacion
+        ON operacion.IdPrestamoCredito =
+           pago.IdPrestamoCredito
+
+    INNER JOIN dbo.usuarios usuario
+        ON usuario.id_usuario =
+           pago.IdUsuario
+
+    INNER JOIN dbo.roles rol
+        ON rol.id_rol =
+           usuario.id_rol
+
+    WHERE pago.IdPrestamoCredito =
+          @IdPrestamoCredito;
+END;
+GO
+
+/*=========================================
+  LISTAR CAJAS
+=========================================*/
+CREATE PROCEDURE sp_listar_cajas
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT *
+    FROM caja
+    ORDER BY id_caja DESC;
+END;
+GO
+
+/*=========================================
+  REGISTRAR VENTA
+=========================================*/
+CREATE PROCEDURE sp_registrar_venta
+    @id_usuario INT,
+    @total DECIMAL(10,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO ventas(
+        id_usuario,
+        fecha,
+        total
+    )
+    VALUES(
+        @id_usuario,
+        GETDATE(),
+        @total
+    );
+
+    SELECT SCOPE_IDENTITY() AS id_venta;
+END;
+GO
+
+/*=========================================
+  REGISTRAR DETALLE VENTA
+=========================================*/
+CREATE PROCEDURE sp_registrar_detalle_venta
+    @id_venta INT,
+    @id_producto INT,
+    @cantidad INT,
+    @precio DECIMAL(10,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO detalle_venta(
+        id_venta,
+        id_producto,
+        cantidad,
+        precio
+    )
+    VALUES(
+        @id_venta,
+        @id_producto,
+        @cantidad,
+        @precio
+    );
+
+    UPDATE productos
+    SET stock = stock - @cantidad
+    WHERE id_producto = @id_producto;
+END;
+GO
+
+/*=========================================
+  LISTAR VENTAS
+=========================================*/
+CREATE PROCEDURE sp_listar_ventas
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        v.id_venta,
+        v.fecha,
+        v.total,
+        u.nombre AS vendedor
+    FROM ventas v
+    INNER JOIN usuarios u
+        ON v.id_usuario = u.id_usuario
+    ORDER BY v.id_venta DESC;
+END;
+GO
+
+/*=========================================
+  DETALLE DE UNA VENTA
+=========================================*/
+CREATE PROCEDURE sp_detalle_venta
+    @id_venta INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.nombre,
+        dv.cantidad,
+        dv.precio,
+        (dv.cantidad * dv.precio) AS subtotal
+    FROM detalle_venta dv
+    INNER JOIN productos p
+        ON dv.id_producto = p.id_producto
+    WHERE dv.id_venta = @id_venta;
+END;
+GO
+
+/*BOLETA*/
+CREATE OR ALTER PROCEDURE dbo.sp_POS_ObtenerVentaCompleta
+    @IdVentaPOS INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    /* ============================================
+       CABECERA DE LA VENTA
+    ============================================ */
+    SELECT
+        venta.IdVenta AS IdVentaPOS,
+
+        venta.NumeroVenta,
+
+        venta.FechaVenta,
+
+        venta.id_usuario AS IdUsuario,
+
+        usuario.nombre AS NombreTrabajador,
+
+        venta.IdClientePOS,
+
+        ISNULL(
+            cliente.TipoDocumento,
+            'OTROS'
+        ) AS TipoDocumento,
+
+        ISNULL(
+            cliente.NumeroDocumento,
+            ''
+        ) AS NumeroDocumento,
+
+        ISNULL(
+            cliente.NombreCompleto,
+            'Otros clientes'
+        ) AS NombreCliente,
+
+        venta.MetodoPago,
+
+        venta.Subtotal,
+
+        venta.IGV,
+
+        ISNULL(
+            (
+                SELECT SUM(detalle.Descuento)
+                FROM dbo.DetalleVentaPOS detalle
+                WHERE detalle.IdVenta = venta.IdVenta
+            ),
+            0
+        ) AS DescuentoTotal,
+
+        venta.Total,
+
+        venta.Estado,
+
+        ISNULL(
+            (
+                SELECT SUM(detalle.Cantidad)
+                FROM dbo.DetalleVentaPOS detalle
+                WHERE detalle.IdVenta = venta.IdVenta
+            ),
+            0
+        ) AS CantidadUnidades,
+
+        ISNULL(
+            (
+                SELECT COUNT(*)
+                FROM dbo.DetalleVentaPOS detalle
+                WHERE detalle.IdVenta = venta.IdVenta
+            ),
+            0
+        ) AS CantidadProductos
+
+    FROM dbo.VentaPOS venta
+
+    INNER JOIN dbo.usuarios usuario
+        ON usuario.id_usuario =
+           venta.id_usuario
+
+    LEFT JOIN dbo.ClientePOS cliente
+        ON cliente.IdClientePOS =
+           venta.IdClientePOS
+
+    WHERE venta.IdVenta =
+          @IdVentaPOS;
+
+    /* ============================================
+       PRODUCTOS DE LA VENTA
+    ============================================ */
+    SELECT
+        detalle.IdDetalle,
+
+        detalle.IdVenta AS IdVentaPOS,
+
+        detalle.id_producto AS IdProducto,
+
+        detalle.IdVariante,
+
+        detalle.NombreProducto,
+
+        ISNULL(
+            detalle.Categoria,
+            ''
+        ) AS Categoria,
+
+        ISNULL(
+            detalle.CodigoBarra,
+            ''
+        ) AS CodigoBarra,
+
+        ISNULL(
+            variante.Descripcion,
+            'Única'
+        ) AS Variante,
+
+        detalle.TipoPrecio,
+
+        detalle.PrecioUnitario,
+
+        detalle.Cantidad,
+
+        detalle.Descuento,
+
+        detalle.TotalLinea
+
+    FROM dbo.DetalleVentaPOS detalle
+
+    LEFT JOIN dbo.Variantes variante
+        ON variante.IdVariante =
+           detalle.IdVariante
+
+    WHERE detalle.IdVenta =
+          @IdVentaPOS
+
+    ORDER BY
+        detalle.IdDetalle;
+END;
+GO
+
+/*=========================================
+  DASHBOARD - VENTAS HOY
+=========================================*/
+CREATE PROCEDURE sp_ventas_hoy
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        COUNT(*) AS cantidad_ventas,
+        ISNULL(SUM(total),0) AS total vendido
+    FROM ventas
+    WHERE CAST(fecha AS DATE) = CAST(GETDATE() AS DATE);
+END;
+GO
+
+/*=========================================
+  STOCK BAJO
+=========================================*/
+CREATE PROCEDURE sp_stock_bajo
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT *
+    FROM productos
+    WHERE stock <= 5;
+END;
+GO
+
+/*TIENDA INVENTARIO*/
+CREATE OR ALTER PROCEDURE dbo.sp_ListarUsuariosActivos
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        u.id_usuario AS IdUsuario,
+        u.nombre AS Nombre,
+        u.usuario AS Usuario,
+        r.nombre AS Rol
+    FROM dbo.usuarios u
+    INNER JOIN dbo.roles r
+        ON r.id_rol = u.id_rol
+    WHERE u.estado = 1
+    ORDER BY u.nombre;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_ListarInventarioTienda
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.id_producto AS IdProducto,
+
+        pi.CodigoBase,
+
+        p.nombre AS NombreProducto,
+
+        pi.Descripcion AS DescripcionProducto,
+
+        pi.IdCategoria,
+
+        c.Nombre AS NombreCategoria,
+
+        pi.TieneVariantes,
+
+        v.IdVariante,
+
+        v.Descripcion AS VarianteDescripcion,
+
+        v.CodigoBarras,
+
+        v.PrecioUnidad,
+
+        ISNULL(
+            v.PrecioMayor,
+            0
+        ) AS PrecioMayor,
+
+        ISNULL(
+            sa.Stock,
+            0
+        ) AS StockAlmacen,
+
+        ISNULL(
+            st.Stock,
+            0
+        ) AS StockTienda,
+
+        CASE
+            WHEN ISNULL(st.Stock, 0) = 0
+                THEN 'AGOTADO'
+
+            WHEN ISNULL(st.Stock, 0) <= 5
+                THEN 'STOCK BAJO'
+
+            ELSE 'EN STOCK'
+        END AS EstadoTienda
+
+    FROM dbo.productos p
+
+    INNER JOIN dbo.ProductoInventario pi
+        ON pi.id_producto =
+           p.id_producto
+
+    INNER JOIN dbo.Categorias c
+        ON c.IdCategoria =
+           pi.IdCategoria
+
+    INNER JOIN dbo.Variantes v
+        ON v.id_producto =
+           p.id_producto
+
+    LEFT JOIN dbo.StockSucursal sa
+        ON sa.IdVariante =
+           v.IdVariante
+       AND sa.TipoUbicacion =
+           'ALMACEN'
+
+    LEFT JOIN dbo.StockSucursal st
+        ON st.IdVariante =
+           v.IdVariante
+       AND st.TipoUbicacion =
+           'TIENDA'
+
+    WHERE p.estado = 1
+      AND pi.Estado = 1
+      AND v.Estado = 1
+
+    ORDER BY
+        p.nombre,
+        v.Descripcion;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_TransferirStockATienda
+    @IdVariante INT,
+    @Cantidad INT,
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @IdProducto INT;
+
+        DECLARE @StockAlmacenAntes INT;
+        DECLARE @StockAlmacenDespues INT;
+
+        DECLARE @StockTiendaAntes INT;
+        DECLARE @StockTiendaDespues INT;
+
+        -- Validar cantidad.
+        IF @Cantidad <= 0
+        BEGIN
+            THROW 50030,
+                  'La cantidad debe ser mayor que cero.',
+                  1;
+        END;
+
+        -- Validar usuario responsable.
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @IdUsuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 50031,
+                  'El trabajador seleccionado no existe o está inactivo.',
+                  1;
+        END;
+
+        -- Validar la variante.
+        SELECT
+            @IdProducto =
+                v.id_producto
+        FROM dbo.Variantes v
+            WITH (UPDLOCK, HOLDLOCK)
+        WHERE v.IdVariante = @IdVariante
+          AND v.Estado = 1;
+
+        IF @IdProducto IS NULL
+        BEGIN
+            THROW 50032,
+                  'La variante seleccionada no existe o está inactiva.',
+                  1;
+        END;
+
+        -- Obtener y bloquear el stock de almacén.
+        SELECT
+            @StockAlmacenAntes =
+                ss.Stock
+        FROM dbo.StockSucursal ss
+            WITH (UPDLOCK, HOLDLOCK)
+        WHERE ss.IdVariante = @IdVariante
+          AND ss.TipoUbicacion = 'ALMACEN';
+
+        IF @StockAlmacenAntes IS NULL
+        BEGIN
+            THROW 50033,
+                  'La variante no tiene un registro de stock en almacén.',
+                  1;
+        END;
+
+        IF @Cantidad > @StockAlmacenAntes
+        BEGIN
+            THROW 50034,
+                  'La cantidad supera el stock disponible en almacén.',
+                  1;
+        END;
+
+        -- Obtener stock actual de tienda.
+        SELECT
+            @StockTiendaAntes =
+                ss.Stock
+        FROM dbo.StockSucursal ss
+            WITH (UPDLOCK, HOLDLOCK)
+        WHERE ss.IdVariante = @IdVariante
+          AND ss.TipoUbicacion = 'TIENDA';
+
+        -- Crear el registro de tienda si no existe.
+        IF @StockTiendaAntes IS NULL
+        BEGIN
+            INSERT INTO dbo.StockSucursal
+            (
+                IdVariante,
+                TipoUbicacion,
+                Stock
+            )
+            VALUES
+            (
+                @IdVariante,
+                'TIENDA',
+                0
+            );
+
+            SET @StockTiendaAntes = 0;
+        END;
+
+        -- Restar del almacén.
+        UPDATE dbo.StockSucursal
+        SET Stock =
+            Stock - @Cantidad
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'ALMACEN';
+
+        -- Sumar a tienda.
+        UPDATE dbo.StockSucursal
+        SET Stock =
+            Stock + @Cantidad
+        WHERE IdVariante = @IdVariante
+          AND TipoUbicacion = 'TIENDA';
+
+        SET @StockAlmacenDespues =
+            @StockAlmacenAntes -
+            @Cantidad;
+
+        SET @StockTiendaDespues =
+            @StockTiendaAntes +
+            @Cantidad;
+
+        -- Registrar el movimiento.
+        INSERT INTO dbo.MovimientoStock
+        (
+            IdVariante,
+            TipoMovimiento,
+            Cantidad,
+            StockAlmacenAntes,
+            StockAlmacenDespues,
+            StockTiendaAntes,
+            StockTiendaDespues,
+            id_usuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdVariante,
+            'ALMACEN_A_TIENDA',
+            @Cantidad,
+            @StockAlmacenAntes,
+            @StockAlmacenDespues,
+            @StockTiendaAntes,
+            @StockTiendaDespues,
+            @IdUsuario,
+            'Transferencia realizada desde Inventario / Tienda'
+        );
+
+        /*
+         * No actualizamos productos.stock porque el stock total
+         * no cambia. Únicamente cambia de ubicación.
+         */
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            1 AS Resultado,
+
+            @IdProducto AS IdProducto,
+
+            @IdVariante AS IdVariante,
+
+            @StockAlmacenDespues
+                AS StockAlmacen,
+
+            @StockTiendaDespues
+                AS StockTienda;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO

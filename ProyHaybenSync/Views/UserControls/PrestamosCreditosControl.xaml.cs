@@ -1027,75 +1027,251 @@ namespace ProySistemaVentas.Views.UserControls
         }
 
 
-        private void BtnDevolverPrestamo_Click(
+        private async void BtnDevolverPrestamo_Click(
             object sender,
             RoutedEventArgs e)
         {
-            MensajeDialog.Mostrar(
-                Window.GetWindow(this),
-                "Devolución",
-                "En el siguiente paso conectaremos la confirmación y devolución del producto.",
-                TipoMensaje.Informacion);
+            if (!TryObtenerOperacionYTrabajador(sender, out PrestamoCreditoItem operacion, out UsuarioMovimiento trabajador) ||
+                !operacion.PuedeDevolver)
+            {
+                return;
+            }
+
+            ConfirmarObservacionDialog dialogo = new ConfirmarObservacionDialog(
+                "Confirmar devolución",
+                $"Se devolverán {operacion.Cantidad} unidad(es) de {operacion.NombreCompleto} al stock de tienda.",
+                "Devolver");
+            dialogo.Owner = Window.GetWindow(this);
+            dialogo.ShowDialog();
+            if (!dialogo.Confirmado)
+            {
+                return;
+            }
+
+            int idOperacion = operacion.IdPrestamoCredito;
+            int idUsuario = trabajador.IdUsuario;
+            string observacion = dialogo.Observacion;
+            try
+            {
+                await Task.Run(() => _prestamoCreditoService.RegistrarDevolucion(idOperacion, idUsuario, observacion));
+                await RecargarResumenYListadosAsync();
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Devolución registrada", "El producto fue devuelto al stock de tienda.", TipoMensaje.Exito);
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorOperacion("No se pudo registrar la devolución", ex);
+            }
         }
 
 
-        private void BtnPasarACobranza_Click(
+        private async void BtnPasarACobranza_Click(
             object sender,
             RoutedEventArgs e)
         {
-            MensajeDialog.Mostrar(
-                Window.GetWindow(this),
-                "Pasar a cobranza",
-                "En el siguiente paso crearemos el diálogo para seleccionar la fecha esperada de pago.",
-                TipoMensaje.Informacion);
+            if (!TryObtenerOperacionYTrabajador(sender, out PrestamoCreditoItem operacion, out UsuarioMovimiento trabajador) ||
+                !operacion.PuedePasarACobranza)
+            {
+                return;
+            }
+
+            ConvertirPrestamoCreditoDialog dialogo = new ConvertirPrestamoCreditoDialog(operacion)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialogo.ShowDialog();
+            if (!dialogo.Confirmado)
+            {
+                return;
+            }
+
+            int idOperacion = operacion.IdPrestamoCredito;
+            int idUsuario = trabajador.IdUsuario;
+            DateTime fechaEsperada = dialogo.FechaPagoEsperada;
+            string observacion = dialogo.Observacion;
+            try
+            {
+                await Task.Run(() => _prestamoCreditoService.ConvertirPrestamoACredito(idOperacion, idUsuario, fechaEsperada, observacion));
+                await RecargarResumenYListadosAsync();
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Operación convertida", "El préstamo pasó a cobranza sin modificar el stock.", TipoMensaje.Exito);
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorOperacion("No se pudo pasar a cobranza", ex);
+            }
         }
 
 
-        private void BtnPagarCredito_Click(
+        private async void BtnPagarCredito_Click(
             object sender,
             RoutedEventArgs e)
         {
-            MensajeDialog.Mostrar(
-                Window.GetWindow(this),
-                "Registrar pago",
-                "En el siguiente paso crearemos el diálogo de método de pago y la boleta.",
-                TipoMensaje.Informacion);
+            if (!TryObtenerOperacionYTrabajador(sender, out PrestamoCreditoItem operacion, out UsuarioMovimiento trabajador) ||
+                !operacion.PuedePagar)
+            {
+                return;
+            }
+
+            PagoCreditoDialog dialogo = new PagoCreditoDialog(operacion, trabajador)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialogo.ShowDialog();
+            if (!dialogo.Confirmado)
+            {
+                return;
+            }
+
+            int idOperacion = operacion.IdPrestamoCredito;
+            int idUsuario = trabajador.IdUsuario;
+            string metodoPago = dialogo.MetodoPago;
+            string observacion = dialogo.Observacion;
+            try
+            {
+                await Task.Run(() => _prestamoCreditoService.RegistrarPago(idOperacion, idUsuario, metodoPago, observacion));
+                BoletaPagoCredito boleta = await Task.Run(() => _prestamoCreditoService.ObtenerBoletaPago(idOperacion));
+                await RecargarResumenYListadosAsync();
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Pago registrado", "La cobranza fue completada correctamente.", TipoMensaje.Exito);
+                AbrirNotaCobranza(boleta);
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorOperacion("No se pudo registrar el pago", ex);
+            }
         }
 
 
-        private void BtnPasarAPrestamo_Click(
+        private async void BtnPasarAPrestamo_Click(
             object sender,
             RoutedEventArgs e)
         {
-            MensajeDialog.Mostrar(
-                Window.GetWindow(this),
-                "Pasar a préstamo",
-                "En el siguiente paso conectaremos esta operación.",
-                TipoMensaje.Informacion);
+            if (!TryObtenerOperacionYTrabajador(sender, out PrestamoCreditoItem operacion, out UsuarioMovimiento trabajador) ||
+                !operacion.PuedePasarAPrestamo)
+            {
+                return;
+            }
+
+            if (!MensajeDialog.Confirmar(Window.GetWindow(this), "Pasar a préstamo", "La cobranza volverá a préstamo. No se modificará el stock."))
+            {
+                return;
+            }
+
+            int idOperacion = operacion.IdPrestamoCredito;
+            int idUsuario = trabajador.IdUsuario;
+            try
+            {
+                await Task.Run(() => _prestamoCreditoService.ConvertirCreditoAPrestamo(idOperacion, idUsuario));
+                await RecargarResumenYListadosAsync();
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Operación convertida", "La cobranza pasó a préstamo sin modificar el stock.", TipoMensaje.Exito);
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorOperacion("No se pudo pasar a préstamo", ex);
+            }
+        }
+
+        private async void BtnVerBoleta_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button boton || boton.Tag is not PrestamoCreditoItem operacion || !operacion.IdPagoCredito.HasValue)
+            {
+                return;
+            }
+
+            int idOperacion = operacion.IdPrestamoCredito;
+            try
+            {
+                BoletaPagoCredito boleta = await Task.Run(() => _prestamoCreditoService.ObtenerBoletaPago(idOperacion));
+                AbrirNotaCobranza(boleta);
+            }
+            catch (Exception ex)
+            {
+                MostrarErrorOperacion("No se pudo abrir la nota de cobranza", ex);
+            }
+        }
+
+        private void AbrirNotaCobranza(BoletaPagoCredito boleta)
+        {
+            if (boleta == null)
+            {
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Nota no encontrada", "No se encontró la nota de cobranza para esta operación.", TipoMensaje.Advertencia);
+                return;
+            }
+
+            NotaCobranzaDialog dialogo = new NotaCobranzaDialog(boleta)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialogo.ShowDialog();
+        }
+
+        private bool TryObtenerOperacionYTrabajador(object sender, out PrestamoCreditoItem operacion, out UsuarioMovimiento trabajador)
+        {
+            operacion = null;
+            trabajador = null;
+            if (sender is not Button boton || boton.Tag is not PrestamoCreditoItem item)
+            {
+                return false;
+            }
+
+            if (CboTrabajador.SelectedItem is not UsuarioMovimiento usuario)
+            {
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Trabajador obligatorio", "Debe seleccionar al trabajador responsable antes de continuar.", TipoMensaje.Advertencia);
+                CboTrabajador.Focus();
+                return false;
+            }
+
+            operacion = item;
+            trabajador = usuario;
+            return true;
+        }
+
+        private void MostrarErrorOperacion(string titulo, Exception ex)
+        {
+            string mensaje = ObtenerMensajeError(ex);
+            if (mensaje.Contains("caja", StringComparison.OrdinalIgnoreCase) && mensaje.Contains("abierta", StringComparison.OrdinalIgnoreCase))
+            {
+                mensaje = "Debe abrir una caja antes de cobrar en efectivo.";
+            }
+            MensajeDialog.Mostrar(Window.GetWindow(this), titulo, mensaje, TipoMensaje.Error);
         }
 
 
-        private void BtnVerTodosPrestamos_Click(
+        private async void BtnVerTodosPrestamos_Click(
             object sender,
             RoutedEventArgs e)
         {
-            MensajeDialog.Mostrar(
-                Window.GetWindow(this),
-                "Todos los préstamos",
-                "En el siguiente paso construiremos la ventana de filtros y paginación.",
-                TipoMensaje.Informacion);
+            if (CboTrabajador.SelectedItem is not UsuarioMovimiento trabajador)
+            {
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Trabajador obligatorio", "Seleccione un trabajador para administrar operaciones desde el listado.", TipoMensaje.Advertencia);
+                return;
+            }
+
+            ListadoPrestamosCreditosDialog dialogo = new ListadoPrestamosCreditosDialog(false, trabajador)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialogo.OperacionActualizada += async (_, _) => await RecargarResumenYListadosAsync();
+            dialogo.ShowDialog();
+            await RecargarResumenYListadosAsync();
         }
 
 
-        private void BtnVerTodosCreditos_Click(
+        private async void BtnVerTodosCreditos_Click(
             object sender,
             RoutedEventArgs e)
         {
-            MensajeDialog.Mostrar(
-                Window.GetWindow(this),
-                "Todas las cobranzas",
-                "En el siguiente paso construiremos la ventana de filtros y paginación.",
-                TipoMensaje.Informacion);
+            if (CboTrabajador.SelectedItem is not UsuarioMovimiento trabajador)
+            {
+                MensajeDialog.Mostrar(Window.GetWindow(this), "Trabajador obligatorio", "Seleccione un trabajador para administrar operaciones desde el listado.", TipoMensaje.Advertencia);
+                return;
+            }
+
+            ListadoPrestamosCreditosDialog dialogo = new ListadoPrestamosCreditosDialog(true, trabajador)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialogo.OperacionActualizada += async (_, _) => await RecargarResumenYListadosAsync();
+            dialogo.ShowDialog();
+            await RecargarResumenYListadosAsync();
         }
 
 

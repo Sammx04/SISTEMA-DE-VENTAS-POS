@@ -4,8 +4,8 @@
         Title="Detalle de operación"
         Width="880"
         Height="720"
-        MinWidth="760"
-        MinHeight="620"
+        MinWidth="480"
+        MinHeight="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         Background="#0B1120"
@@ -270,7 +270,7 @@
 
     </Window.Resources>
 
-    <Grid Margin="22">
+    <Grid Margin="14">
 
         <Grid.RowDefinitions>
 
@@ -389,8 +389,8 @@
 
                     </Border>
 
-                    <Border Style="{StaticResource CardStyle}"
-                            Margin="0,0,0,10">
+                     <Border Style="{StaticResource CardStyle}"
+                             Margin="0,0,0,10">
 
                         <StackPanel>
 
@@ -399,6 +399,39 @@
 
                             <TextBlock Text="{Binding AccionActual, Mode=OneWay}"
                                        Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                     </Border>
+
+                    <Border x:Name="BrdTipoPrecio"
+                            Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="TIPO DE PRECIO"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding TipoPrecio, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <Border x:Name="BrdImportePago"
+                            Style="{StaticResource CardStyle}"
+                            Margin="0,0,10,10">
+
+                        <StackPanel>
+
+                            <TextBlock Text="IMPORTE DE PAGO"
+                                       Style="{StaticResource EtiquetaStyle}"/>
+
+                            <TextBlock Text="{Binding MontoPagadoTexto, Mode=OneWay}"
+                                       Style="{StaticResource ValorStyle}"
+                                       Foreground="#4ADE80"/>
 
                         </StackPanel>
 
@@ -601,6 +634,23 @@
                                    Style="{StaticResource EtiquetaStyle}"/>
 
                         <TextBlock Text="{Binding Observacion, Mode=OneWay}"
+                                   Style="{StaticResource ValorStyle}"
+                                   MinHeight="25"/>
+
+                    </StackPanel>
+
+                </Border>
+
+                <Border x:Name="BrdObservacionPago"
+                        Style="{StaticResource CardStyle}"
+                        Margin="0,0,0,18">
+
+                    <StackPanel>
+
+                        <TextBlock Text="OBSERVACIÓN DEL PAGO"
+                                   Style="{StaticResource EtiquetaStyle}"/>
+
+                        <TextBlock Text="{Binding ObservacionPago, Mode=OneWay}"
                                    Style="{StaticResource ValorStyle}"
                                    MinHeight="25"/>
 

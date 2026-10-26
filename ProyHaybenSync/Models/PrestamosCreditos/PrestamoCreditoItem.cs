@@ -165,6 +165,19 @@ namespace ProySistemaVentas.Models.PrestamosCreditos
         {
             get
             {
+                if (EsCredito && EstaPendiente && FechaPagoEsperada.HasValue)
+                {
+                    if (FechaPagoEsperada.Value.Date < DateTime.Today)
+                    {
+                        return "Vencido";
+                    }
+
+                    if (FechaPagoEsperada.Value.Date == DateTime.Today)
+                    {
+                        return "Vence hoy";
+                    }
+                }
+
                 if (Estado.Equals(
                         "PENDIENTE",
                         StringComparison.OrdinalIgnoreCase))
@@ -239,8 +252,17 @@ namespace ProySistemaVentas.Models.PrestamosCreditos
             get
             {
                 return EsCredito &&
-                       EstaPendiente;
+                       EstaPendiente &&
+                       !IdPagoCredito.HasValue;
             }
         }
+
+        public bool EstaVencido => EsCredito && EstaPendiente &&
+            FechaPagoEsperada.HasValue &&
+            FechaPagoEsperada.Value.Date < DateTime.Today;
+
+        public bool VenceHoy => EsCredito && EstaPendiente &&
+            FechaPagoEsperada.HasValue &&
+            FechaPagoEsperada.Value.Date == DateTime.Today;
     }
 }

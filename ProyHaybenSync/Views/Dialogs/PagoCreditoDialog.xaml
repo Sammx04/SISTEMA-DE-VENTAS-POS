@@ -1,0 +1,150 @@
+<Window x:Class="ProySistemaVentas.Views.Dialogs.PagoCreditoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Registrar pago de crédito"
+        Width="720"
+        Height="680"
+        MinWidth="560"
+        MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="#0B1120"
+        FontFamily="Segoe UI"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PanelBrush" Color="#0D1526"/>
+        <SolidColorBrush x:Key="PanelClaroBrush" Color="#13203A"/>
+        <SolidColorBrush x:Key="BordeBrush" Color="#24344F"/>
+        <SolidColorBrush x:Key="CianBrush" Color="#22D3EE"/>
+        <SolidColorBrush x:Key="TextoPrincipalBrush" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="TextoSecundarioBrush" Color="#94A3B8"/>
+
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordeBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+
+        <Style x:Key="EtiquetaStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextoSecundarioBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="ValorStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextoPrincipalBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+
+        <Style x:Key="CampoStyle" TargetType="Control">
+            <Setter Property="Background" Value="{StaticResource PanelClaroBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoPrincipalBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordeBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+
+        <Style x:Key="BotonSecundarioStyle" TargetType="Button">
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="MinWidth" Value="110"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoPrincipalBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordeBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="BotonConfirmarStyle" TargetType="Button" BasedOn="{StaticResource BotonSecundarioStyle}">
+            <Setter Property="Background" Value="{StaticResource CianBrush}"/>
+            <Setter Property="Foreground" Value="#083344"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock Text="Registrar pago de crédito" Foreground="{StaticResource TextoPrincipalBrush}" FontSize="23" FontWeight="SemiBold"/>
+            <TextBlock Text="Verifique la operación y seleccione el método de pago." Foreground="{StaticResource TextoSecundarioBrush}" FontSize="13" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Margin="0,0,14,14">
+                            <TextBlock Text="OPERACIÓN" Style="{StaticResource EtiquetaStyle}"/>
+                            <TextBlock x:Name="TxtOperacion" Style="{StaticResource ValorStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,0,14">
+                            <TextBlock Text="CLIENTE" Style="{StaticResource EtiquetaStyle}"/>
+                            <TextBlock x:Name="TxtCliente" Style="{StaticResource ValorStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Margin="0,0,14,14">
+                            <TextBlock Text="PRODUCTO" Style="{StaticResource EtiquetaStyle}"/>
+                            <TextBlock x:Name="TxtProducto" Style="{StaticResource ValorStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,14">
+                            <TextBlock Text="VARIANTE" Style="{StaticResource EtiquetaStyle}"/>
+                            <TextBlock x:Name="TxtVariante" Style="{StaticResource ValorStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Margin="0,0,14,0">
+                            <TextBlock Text="CANTIDAD" Style="{StaticResource EtiquetaStyle}"/>
+                            <TextBlock x:Name="TxtCantidad" Style="{StaticResource ValorStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="1">
+                            <TextBlock Text="DEUDA A COBRAR" Style="{StaticResource EtiquetaStyle}"/>
+                            <TextBlock x:Name="TxtDeuda" Style="{StaticResource ValorStyle}" Foreground="#67E8F9" FontSize="17"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Margin="0,14,0,0">
+                            <TextBlock Text="TRABAJADOR" Style="{StaticResource EtiquetaStyle}"/>
+                            <TextBlock x:Name="TxtTrabajador" Style="{StaticResource ValorStyle}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="MÉTODO DE PAGO" Style="{StaticResource EtiquetaStyle}"/>
+                        <ComboBox x:Name="CboMetodoPago" Style="{StaticResource CampoStyle}" Height="40" Margin="0,7,0,16" SelectionChanged="CboMetodoPago_SelectionChanged">
+                            <ComboBoxItem Content="Seleccione un método" Tag="" IsSelected="True"/>
+                            <ComboBoxItem Content="Efectivo" Tag="EFECTIVO"/>
+                            <ComboBoxItem Content="Yape" Tag="YAPE"/>
+                        </ComboBox>
+
+                        <TextBlock Text="OBSERVACIÓN" Style="{StaticResource EtiquetaStyle}"/>
+                        <TextBox x:Name="TxtObservacion" Style="{StaticResource CampoStyle}" Margin="0,7,0,0" Height="82" Padding="10" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="500"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Cancelar" Style="{StaticResource BotonSecundarioStyle}" Margin="0,0,10,0" IsCancel="True" Click="BtnCancelar_Click"/>
+            <Button Content="Confirmar pago" Style="{StaticResource BotonConfirmarStyle}" IsDefault="True" Click="BtnConfirmar_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

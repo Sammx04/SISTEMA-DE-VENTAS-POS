@@ -1,0 +1,162 @@
+<Window x:Class="ProySistemaVentas.Views.Dialogs.ConvertirPrestamoCreditoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Convertir préstamo a crédito"
+        Width="620"
+        Height="620"
+        MinWidth="540"
+        MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#0B1120"
+        FontFamily="Segoe UI"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="PanelBrush" Color="#0D1526"/>
+        <SolidColorBrush x:Key="PanelClaroBrush" Color="#13203A"/>
+        <SolidColorBrush x:Key="BordeBrush" Color="#24344F"/>
+        <SolidColorBrush x:Key="CianBrush" Color="#22D3EE"/>
+        <SolidColorBrush x:Key="TextoPrincipalBrush" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="TextoSecundarioBrush" Color="#94A3B8"/>
+
+        <Style x:Key="EtiquetaStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextoSecundarioBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="ValorStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextoPrincipalBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+
+        <Style x:Key="CampoStyle" TargetType="Control">
+            <Setter Property="Background" Value="{StaticResource PanelClaroBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoPrincipalBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordeBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+
+        <Style x:Key="BotonSecundarioStyle" TargetType="Button">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="20,0"/>
+            <Setter Property="Background" Value="{StaticResource PanelClaroBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoPrincipalBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordeBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="BotonConfirmarStyle" TargetType="Button" BasedOn="{StaticResource BotonSecundarioStyle}">
+            <Setter Property="Background" Value="{StaticResource CianBrush}"/>
+            <Setter Property="Foreground" Value="#083344"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Convertir préstamo a crédito"
+                       Foreground="{StaticResource TextoPrincipalBrush}"
+                       FontSize="22"
+                       FontWeight="Bold"/>
+            <TextBlock Margin="0,7,0,0"
+                       Text="Registra la fecha esperada de pago para esta operación."
+                       Foreground="{StaticResource TextoSecundarioBrush}"
+                       FontSize="13"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,24,0,24"
+                Padding="20"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BordeBrush}"
+                BorderThickness="1"
+                CornerRadius="12">
+            <StackPanel>
+                <TextBlock Text="DATOS DE LA OPERACIÓN"
+                           Foreground="{StaticResource CianBrush}"
+                           FontSize="11"
+                           FontWeight="Bold"/>
+
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="0,0,14,16">
+                        <TextBlock Text="OPERACIÓN" Style="{StaticResource EtiquetaStyle}"/>
+                        <TextBlock Text="{Binding NumeroOperacion}" Style="{StaticResource ValorStyle}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="14,0,0,16">
+                        <TextBlock Text="CLIENTE" Style="{StaticResource EtiquetaStyle}"/>
+                        <TextBlock Text="{Binding ClienteTienda}" Style="{StaticResource ValorStyle}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Margin="0,0,14,0">
+                        <TextBlock Text="PRODUCTO" Style="{StaticResource EtiquetaStyle}"/>
+                        <TextBlock Text="{Binding NombreCompleto}" Style="{StaticResource ValorStyle}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="14,0,0,0">
+                        <TextBlock Text="TOTAL" Style="{StaticResource EtiquetaStyle}"/>
+                        <TextBlock Text="{Binding TotalTexto}" Style="{StaticResource ValorStyle}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Border Height="1" Margin="0,22,0,22" Background="{StaticResource BordeBrush}"/>
+
+                <TextBlock Text="FECHA DE PAGO ESPERADA *" Style="{StaticResource EtiquetaStyle}"/>
+                <DatePicker x:Name="DtpFechaPagoEsperada"
+                            Margin="0,7,0,0"
+                            Height="38"
+                            SelectedDateFormat="Short"
+                            Style="{StaticResource CampoStyle}"/>
+                <TextBlock Margin="0,6,0,0"
+                           Text="Debe ser hoy o una fecha posterior."
+                           Foreground="{StaticResource TextoSecundarioBrush}"
+                           FontSize="11"/>
+
+                <TextBlock Margin="0,20,0,0" Text="OBSERVACIÓN" Style="{StaticResource EtiquetaStyle}"/>
+                <TextBox x:Name="TxtObservacion"
+                         Margin="0,7,0,0"
+                         MinHeight="76"
+                         MaxLength="500"
+                         Padding="10"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Style="{StaticResource CampoStyle}"/>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="2" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button Width="112"
+                    Margin="0,0,10,0"
+                    Content="Cancelar"
+                    Style="{StaticResource BotonSecundarioStyle}"
+                    Click="BtnCancelar_Click"/>
+            <Button Width="150"
+                    Content="Confirmar"
+                    Style="{StaticResource BotonConfirmarStyle}"
+                    Click="BtnConfirmar_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

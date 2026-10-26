@@ -97,13 +97,25 @@ namespace ProySistemaVentas.Views.Dialogs
             }
 
             /*
-             * El método de pago solo se muestra cuando
-             * existe un pago registrado.
+             * Los datos propios del pago solo se muestran
+             * cuando existe un pago registrado.
              */
-            BrdMetodoPago.Visibility =
+            Visibility visibilidadPago =
                 Detalle.IdPagoCredito.HasValue
                     ? Visibility.Visible
                     : Visibility.Collapsed;
+
+            BrdMetodoPago.Visibility =
+                visibilidadPago;
+
+            BrdTipoPrecio.Visibility =
+                visibilidadPago;
+
+            BrdImportePago.Visibility =
+                visibilidadPago;
+
+            BrdObservacionPago.Visibility =
+                visibilidadPago;
         }
 
 

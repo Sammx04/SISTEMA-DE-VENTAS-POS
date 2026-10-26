@@ -1,0 +1,105 @@
+<Window x:Class="ProySistemaVentas.Views.Dialogs.NotaCobranzaDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NOTA DE COBRANZA"
+        Width="720"
+        Height="820"
+        MinWidth="560"
+        MinHeight="600"
+        WindowStartupLocation="CenterOwner"
+        Background="#0B1120"
+        FontFamily="Segoe UI"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Background" Value="#13203A" />
+            <Setter Property="Foreground" Value="#E2E8F0" />
+            <Setter Property="BorderBrush" Value="#334155" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style x:Key="PrintLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#64748B" />
+        </Style>
+        <Style x:Key="PrintValue" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="#0F172A" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#13203A" BorderBrush="#24344F" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,0,0,14">
+            <Grid>
+                <StackPanel>
+                    <TextBlock Text="NOTA DE COBRANZA" Foreground="White" FontSize="21" FontWeight="Bold" />
+                    <TextBlock Text="Comprobante de pago de crédito" Foreground="#94A3B8" FontSize="11" Margin="0,4,0,0" />
+                </StackPanel>
+                <TextBlock Text="{Binding NumeroPago}" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#67E8F9" FontWeight="Bold" FontSize="14" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Border x:Name="NotaImprimible" Width="470" HorizontalAlignment="Center" Background="White" BorderBrush="#CBD5E1" BorderThickness="1" Padding="28">
+                <StackPanel>
+                    <TextBlock Text="NOTA DE COBRANZA" HorizontalAlignment="Center" FontSize="19" FontWeight="Bold" Foreground="#0F172A" />
+                    <TextBlock Text="COMPROBANTE DE PAGO" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="9" FontWeight="Bold" Foreground="#475569" />
+                    <Border Height="1" Background="#CBD5E1" Margin="0,16" />
+
+                    <UniformGrid Columns="2">
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="PAGO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding NumeroPago}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="OPERACIÓN" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding NumeroOperacion}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="FECHA DE PAGO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding FechaPagoTexto}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="MÉTODO DE PAGO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding MetodoPago}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="CLIENTE" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding ClienteTienda}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="ESTADO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding Estado}" Style="{StaticResource PrintValue}" /></StackPanel>
+                    </UniformGrid>
+
+                    <Border Height="1" Background="#E2E8F0" Margin="0,4,0,14" />
+                    <TextBlock Text="DETALLE DEL PRODUCTO" Style="{StaticResource PrintLabel}" Margin="0,0,0,10" />
+                    <UniformGrid Columns="2">
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="PRODUCTO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding NombreProducto}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="VARIANTE" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding Variante}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="CÓDIGO DE BARRAS" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding CodigoBarra}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="TIPO DE PRECIO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding TipoPrecio}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="CANTIDAD" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding Cantidad}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="PRECIO UNITARIO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding PrecioUnitarioTexto}" Style="{StaticResource PrintValue}" /></StackPanel>
+                    </UniformGrid>
+
+                    <Border Background="#F0FDFA" BorderBrush="#99F6E4" BorderThickness="1" Padding="12" Margin="0,2,0,16">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel><TextBlock Text="TOTAL DE LA OPERACIÓN" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding Total, StringFormat={}{0:N2}}" Style="{StaticResource PrintValue}" /></StackPanel><StackPanel Grid.Column="1"><TextBlock Text="PAGO REALIZADO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding TotalPagadoTexto}" Style="{StaticResource PrintValue}" FontWeight="Bold" Foreground="#047857" /></StackPanel></Grid>
+                    </Border>
+
+                    <TextBlock Text="REGISTRO" Style="{StaticResource PrintLabel}" Margin="0,0,0,10" />
+                    <UniformGrid Columns="2">
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="TRABAJADOR" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding NombreTrabajador}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="USUARIO / ROL" Style="{StaticResource PrintLabel}" /><TextBlock Style="{StaticResource PrintValue}"><Run Text="{Binding UsuarioTrabajador}" /><Run Text=" / " /><Run Text="{Binding RolTrabajador}" /></TextBlock></StackPanel>
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="FECHA DE REGISTRO" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding FechaRegistroTexto}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="FECHA ESPERADA" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding FechaPagoEsperadaTexto}" Style="{StaticResource PrintValue}" /></StackPanel>
+                        <StackPanel Margin="0,0,14,12"><TextBlock Text="ID PAGO / CAJA" Style="{StaticResource PrintLabel}" /><TextBlock Style="{StaticResource PrintValue}"><Run Text="{Binding IdPagoCredito}" /><Run Text=" / " /><Run Text="{Binding IdCaja}" /></TextBlock></StackPanel>
+                        <StackPanel Margin="0,0,0,12"><TextBlock Text="ID CRÉDITO / USUARIO" Style="{StaticResource PrintLabel}" /><TextBlock Style="{StaticResource PrintValue}"><Run Text="{Binding IdPrestamoCredito}" /><Run Text=" / " /><Run Text="{Binding IdUsuario}" /></TextBlock></StackPanel>
+                    </UniformGrid>
+                    <TextBlock Text="OBSERVACIÓN" Style="{StaticResource PrintLabel}" /><TextBlock Text="{Binding Observacion}" Style="{StaticResource PrintValue}" MinHeight="24" />
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Imprimir" Style="{StaticResource ActionButton}" Click="BtnImprimir_Click" />
+            <Button Content="Cerrar" Style="{StaticResource ActionButton}" Click="BtnCerrar_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

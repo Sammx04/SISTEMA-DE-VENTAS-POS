@@ -1,0 +1,3012 @@
+USE SistemaVentas;
+GO
+
+/*====================================================
+  SECUENCIA GENERAL DE PRÉSTAMOS Y CRÉDITOS
+====================================================*/
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.sequences
+    WHERE name = 'SeqPrestamoCredito'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+    EXEC
+    (
+        'CREATE SEQUENCE dbo.SeqPrestamoCredito
+         AS INT
+         START WITH 1
+         INCREMENT BY 1;'
+    );
+END;
+GO
+
+/*====================================================
+  SECUENCIA PARA NOTAS DE COBRANZA
+====================================================*/
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.sequences
+    WHERE name = 'SeqPagoCredito'
+      AND schema_id = SCHEMA_ID('dbo')
+)
+BEGIN
+    EXEC
+    (
+        'CREATE SEQUENCE dbo.SeqPagoCredito
+         AS INT
+         START WITH 1
+         INCREMENT BY 1;'
+    );
+END;
+GO
+
+/*====================================================
+  TABLA PRINCIPAL DE PRÉSTAMOS Y CRÉDITOS
+====================================================*/
+IF OBJECT_ID(
+    'dbo.PrestamoCredito',
+    'U'
+) IS NULL
+BEGIN
+    CREATE TABLE dbo.PrestamoCredito
+    (
+        IdPrestamoCredito INT IDENTITY(1,1)
+            NOT NULL
+            CONSTRAINT PK_PrestamoCredito
+            PRIMARY KEY,
+
+        NumeroOperacion VARCHAR(30)
+            NOT NULL,
+
+        TipoOperacion VARCHAR(15)
+            NOT NULL,
+
+        id_producto INT
+            NOT NULL,
+
+        IdVariante INT
+            NOT NULL,
+
+        /*
+         * Guardamos una copia de los datos del producto.
+         * Así el historial no cambia aunque posteriormente
+         * se edite el nombre, variante, código o precio.
+         */
+        NombreProducto VARCHAR(150)
+            NOT NULL,
+
+        VarianteDescripcion NVARCHAR(100)
+            NOT NULL,
+
+        CodigoBarra VARCHAR(50)
+            NOT NULL,
+
+        ClienteTienda NVARCHAR(150)
+            NOT NULL,
+
+        Cantidad INT
+            NOT NULL,
+
+        TipoPrecio VARCHAR(20)
+            NOT NULL,
+
+        PrecioUnitario DECIMAL(10,2)
+            NOT NULL,
+
+        PrecioEditado BIT
+            NOT NULL
+            CONSTRAINT DF_PrestamoCredito_PrecioEditado
+            DEFAULT 0,
+
+        Total DECIMAL(10,2)
+            NOT NULL,
+
+        FechaRegistro DATETIME
+            NOT NULL
+            CONSTRAINT DF_PrestamoCredito_FechaRegistro
+            DEFAULT GETDATE(),
+
+        /*
+         * Solo será obligatoria cuando TipoOperacion
+         * sea CREDITO.
+         */
+        FechaPagoEsperada DATE
+            NULL,
+
+        Estado VARCHAR(20)
+            NOT NULL
+            CONSTRAINT DF_PrestamoCredito_Estado
+            DEFAULT 'PENDIENTE',
+
+        /*
+         * DEVOLUCION cuando finaliza un préstamo.
+         * PAGO cuando finaliza un crédito.
+         */
+        AccionFinal VARCHAR(20)
+            NULL,
+
+        FechaFinalizacion DATETIME
+            NULL,
+
+        MetodoPago VARCHAR(20)
+            NULL,
+
+        IdUsuarioRegistro INT
+            NOT NULL,
+
+        IdUsuarioUltimaAccion INT
+            NULL,
+
+        /*
+         * Permite controlar que el stock no se descuente
+         * o devuelva dos veces.
+         */
+        StockDescontado BIT
+            NOT NULL
+            CONSTRAINT DF_PrestamoCredito_StockDescontado
+            DEFAULT 0,
+
+        Observacion NVARCHAR(300)
+            NULL,
+
+        CONSTRAINT UQ_PrestamoCredito_NumeroOperacion
+            UNIQUE (NumeroOperacion),
+
+        CONSTRAINT FK_PrestamoCredito_Producto
+            FOREIGN KEY (id_producto)
+            REFERENCES dbo.productos(id_producto),
+
+        CONSTRAINT FK_PrestamoCredito_Variante
+            FOREIGN KEY (IdVariante)
+            REFERENCES dbo.Variantes(IdVariante),
+
+        CONSTRAINT FK_PrestamoCredito_UsuarioRegistro
+            FOREIGN KEY (IdUsuarioRegistro)
+            REFERENCES dbo.usuarios(id_usuario),
+
+        CONSTRAINT FK_PrestamoCredito_UsuarioUltimaAccion
+            FOREIGN KEY (IdUsuarioUltimaAccion)
+            REFERENCES dbo.usuarios(id_usuario),
+
+        CONSTRAINT CK_PrestamoCredito_TipoOperacion
+            CHECK
+            (
+                TipoOperacion IN
+                (
+                    'PRESTAMO',
+                    'CREDITO'
+                )
+            ),
+
+        CONSTRAINT CK_PrestamoCredito_Estado
+            CHECK
+            (
+                Estado IN
+                (
+                    'PENDIENTE',
+                    'COMPLETADO'
+                )
+            ),
+
+        CONSTRAINT CK_PrestamoCredito_TipoPrecio
+            CHECK
+            (
+                TipoPrecio IN
+                (
+                    'UNIDAD',
+                    'MAYOR',
+                    'ESPECIAL'
+                )
+            ),
+
+        CONSTRAINT CK_PrestamoCredito_Cantidad
+            CHECK (Cantidad > 0),
+
+        CONSTRAINT CK_PrestamoCredito_Precio
+            CHECK (PrecioUnitario > 0),
+
+        CONSTRAINT CK_PrestamoCredito_Total
+            CHECK (Total > 0),
+
+        CONSTRAINT CK_PrestamoCredito_AccionFinal
+            CHECK
+            (
+                AccionFinal IS NULL
+                OR AccionFinal IN
+                (
+                    'DEVOLUCION',
+                    'PAGO'
+                )
+            ),
+
+        CONSTRAINT CK_PrestamoCredito_MetodoPago
+            CHECK
+            (
+                MetodoPago IS NULL
+                OR MetodoPago IN
+                (
+                    'EFECTIVO',
+                    'YAPE'
+                )
+            ),
+
+        /*
+         * Un crédito pendiente debe tener fecha esperada.
+         * Un préstamo no utiliza esa fecha.
+         */
+        CONSTRAINT CK_PrestamoCredito_FechaEsperada
+            CHECK
+            (
+                (
+                    TipoOperacion = 'PRESTAMO'
+                    AND FechaPagoEsperada IS NULL
+                )
+                OR
+                (
+                    TipoOperacion = 'CREDITO'
+                    AND FechaPagoEsperada IS NOT NULL
+                )
+            )
+    );
+END;
+GO
+
+/*====================================================
+  HISTORIAL DE PRÉSTAMOS Y CRÉDITOS
+====================================================*/
+IF OBJECT_ID(
+    'dbo.MovimientoPrestamoCredito',
+    'U'
+) IS NULL
+BEGIN
+    CREATE TABLE dbo.MovimientoPrestamoCredito
+    (
+        IdMovimientoPC INT IDENTITY(1,1)
+            NOT NULL
+            CONSTRAINT PK_MovimientoPrestamoCredito
+            PRIMARY KEY,
+
+        IdPrestamoCredito INT
+            NOT NULL,
+
+        TipoMovimiento VARCHAR(40)
+            NOT NULL,
+
+        TipoOperacionAnterior VARCHAR(15)
+            NULL,
+
+        TipoOperacionNuevo VARCHAR(15)
+            NULL,
+
+        EstadoAnterior VARCHAR(20)
+            NULL,
+
+        EstadoNuevo VARCHAR(20)
+            NULL,
+
+        IdUsuario INT
+            NOT NULL,
+
+        FechaMovimiento DATETIME
+            NOT NULL
+            CONSTRAINT DF_MovimientoPC_Fecha
+            DEFAULT GETDATE(),
+
+        Observacion NVARCHAR(300)
+            NULL,
+
+        CONSTRAINT FK_MovimientoPC_Operacion
+            FOREIGN KEY (IdPrestamoCredito)
+            REFERENCES dbo.PrestamoCredito(
+                IdPrestamoCredito
+            ),
+
+        CONSTRAINT FK_MovimientoPC_Usuario
+            FOREIGN KEY (IdUsuario)
+            REFERENCES dbo.usuarios(id_usuario),
+
+        CONSTRAINT CK_MovimientoPC_Tipo
+            CHECK
+            (
+                TipoMovimiento IN
+                (
+                    'REGISTRO_PRESTAMO',
+                    'REGISTRO_CREDITO',
+                    'CONVERSION_A_CREDITO',
+                    'CONVERSION_A_PRESTAMO',
+                    'DEVOLUCION',
+                    'PAGO'
+                )
+            )
+    );
+END;
+GO
+
+/*====================================================
+  PAGOS DE CRÉDITOS
+====================================================*/
+IF OBJECT_ID(
+    'dbo.PagoCredito',
+    'U'
+) IS NULL
+BEGIN
+    CREATE TABLE dbo.PagoCredito
+    (
+        IdPagoCredito INT IDENTITY(1,1)
+            NOT NULL
+            CONSTRAINT PK_PagoCredito
+            PRIMARY KEY,
+
+        NumeroPago VARCHAR(30)
+            NOT NULL,
+
+        IdPrestamoCredito INT
+            NOT NULL,
+
+        IdUsuario INT
+            NOT NULL,
+
+        IdCaja INT
+            NULL,
+
+        MetodoPago VARCHAR(20)
+            NOT NULL,
+
+        Monto DECIMAL(10,2)
+            NOT NULL,
+
+        FechaPago DATETIME
+            NOT NULL
+            CONSTRAINT DF_PagoCredito_FechaPago
+            DEFAULT GETDATE(),
+
+        Observacion NVARCHAR(300)
+            NULL,
+
+        CONSTRAINT UQ_PagoCredito_NumeroPago
+            UNIQUE (NumeroPago),
+
+        /*
+         * Por ahora el flujo maneja pago completo.
+         * Un crédito solo puede tener un pago final.
+         */
+        CONSTRAINT UQ_PagoCredito_Operacion
+            UNIQUE (IdPrestamoCredito),
+
+        CONSTRAINT FK_PagoCredito_Operacion
+            FOREIGN KEY (IdPrestamoCredito)
+            REFERENCES dbo.PrestamoCredito(
+                IdPrestamoCredito
+            ),
+
+        CONSTRAINT FK_PagoCredito_Usuario
+            FOREIGN KEY (IdUsuario)
+            REFERENCES dbo.usuarios(id_usuario),
+
+        CONSTRAINT FK_PagoCredito_Caja
+            FOREIGN KEY (IdCaja)
+            REFERENCES dbo.caja(id_caja),
+
+        CONSTRAINT CK_PagoCredito_Metodo
+            CHECK
+            (
+                MetodoPago IN
+                (
+                    'EFECTIVO',
+                    'YAPE'
+                )
+            ),
+
+        CONSTRAINT CK_PagoCredito_Monto
+            CHECK (Monto > 0)
+    );
+END;
+GO
+
+/*====================================================
+  MOVIMIENTOS MONETARIOS DE CAJA
+====================================================*/
+IF OBJECT_ID(
+    'dbo.MovimientoCaja',
+    'U'
+) IS NULL
+BEGIN
+    CREATE TABLE dbo.MovimientoCaja
+    (
+        IdMovimientoCaja INT IDENTITY(1,1)
+            NOT NULL
+            CONSTRAINT PK_MovimientoCaja
+            PRIMARY KEY,
+
+        IdCaja INT
+            NOT NULL,
+
+        IdUsuario INT
+            NOT NULL,
+
+        TipoMovimiento VARCHAR(20)
+            NOT NULL,
+
+        Origen VARCHAR(30)
+            NOT NULL,
+
+        Concepto NVARCHAR(200)
+            NOT NULL,
+
+        Monto DECIMAL(10,2)
+            NOT NULL,
+
+        MetodoPago VARCHAR(20)
+            NOT NULL,
+
+        IdPagoCredito INT
+            NULL,
+
+        FechaMovimiento DATETIME
+            NOT NULL
+            CONSTRAINT DF_MovimientoCaja_Fecha
+            DEFAULT GETDATE(),
+
+        Observacion NVARCHAR(300)
+            NULL,
+
+        CONSTRAINT FK_MovimientoCaja_Caja
+            FOREIGN KEY (IdCaja)
+            REFERENCES dbo.caja(id_caja),
+
+        CONSTRAINT FK_MovimientoCaja_Usuario
+            FOREIGN KEY (IdUsuario)
+            REFERENCES dbo.usuarios(id_usuario),
+
+        CONSTRAINT FK_MovimientoCaja_PagoCredito
+            FOREIGN KEY (IdPagoCredito)
+            REFERENCES dbo.PagoCredito(
+                IdPagoCredito
+            ),
+
+        CONSTRAINT CK_MovimientoCaja_Tipo
+            CHECK
+            (
+                TipoMovimiento IN
+                (
+                    'INGRESO',
+                    'EGRESO'
+                )
+            ),
+
+        CONSTRAINT CK_MovimientoCaja_Origen
+            CHECK
+            (
+                Origen IN
+                (
+                    'CREDITO',
+                    'VENTA',
+                    'AJUSTE'
+                )
+            ),
+
+        CONSTRAINT CK_MovimientoCaja_Metodo
+            CHECK
+            (
+                MetodoPago IN
+                (
+                    'EFECTIVO',
+                    'YAPE',
+                    'TARJETA'
+                )
+            ),
+
+        CONSTRAINT CK_MovimientoCaja_Monto
+            CHECK (Monto > 0)
+    );
+END;
+GO
+
+/*====================================================
+  ÍNDICES DEL MÓDULO
+====================================================*/
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'IX_PrestamoCredito_TipoEstadoFecha'
+      AND object_id =
+        OBJECT_ID('dbo.PrestamoCredito')
+)
+BEGIN
+    CREATE INDEX
+        IX_PrestamoCredito_TipoEstadoFecha
+    ON dbo.PrestamoCredito
+    (
+        TipoOperacion,
+        Estado,
+        FechaRegistro DESC
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'IX_PrestamoCredito_Cliente'
+      AND object_id =
+        OBJECT_ID('dbo.PrestamoCredito')
+)
+BEGIN
+    CREATE INDEX
+        IX_PrestamoCredito_Cliente
+    ON dbo.PrestamoCredito
+    (
+        ClienteTienda
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'IX_PrestamoCredito_Variante'
+      AND object_id =
+        OBJECT_ID('dbo.PrestamoCredito')
+)
+BEGIN
+    CREATE INDEX
+        IX_PrestamoCredito_Variante
+    ON dbo.PrestamoCredito
+    (
+        IdVariante
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'IX_MovimientoPC_OperacionFecha'
+      AND object_id =
+        OBJECT_ID(
+            'dbo.MovimientoPrestamoCredito'
+        )
+)
+BEGIN
+    CREATE INDEX
+        IX_MovimientoPC_OperacionFecha
+    ON dbo.MovimientoPrestamoCredito
+    (
+        IdPrestamoCredito,
+        FechaMovimiento DESC
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'IX_PagoCredito_Fecha'
+      AND object_id =
+        OBJECT_ID('dbo.PagoCredito')
+)
+BEGIN
+    CREATE INDEX
+        IX_PagoCredito_Fecha
+    ON dbo.PagoCredito
+    (
+        FechaPago DESC
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'IX_MovimientoCaja_CajaFecha'
+      AND object_id =
+        OBJECT_ID('dbo.MovimientoCaja')
+)
+BEGIN
+    CREATE INDEX
+        IX_MovimientoCaja_CajaFecha
+    ON dbo.MovimientoCaja
+    (
+        IdCaja,
+        FechaMovimiento DESC
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name =
+        'UX_MovimientoCaja_PagoCredito'
+      AND object_id =
+        OBJECT_ID('dbo.MovimientoCaja')
+)
+BEGIN
+    CREATE UNIQUE INDEX
+        UX_MovimientoCaja_PagoCredito
+    ON dbo.MovimientoCaja
+    (
+        IdPagoCredito
+    )
+    WHERE IdPagoCredito IS NOT NULL;
+END;
+GO
+
+SELECT
+    s.name AS Esquema,
+    o.name AS Objeto,
+    o.type_desc AS Tipo
+FROM sys.objects o
+INNER JOIN sys.schemas s
+    ON s.schema_id = o.schema_id
+WHERE o.name IN
+(
+    'PrestamoCredito',
+    'MovimientoPrestamoCredito',
+    'PagoCredito',
+    'MovimientoCaja'
+)
+ORDER BY o.name;
+GO
+
+SELECT
+    s.name AS Esquema,
+    seq.name AS Secuencia,
+    seq.current_value AS ValorActual
+FROM sys.sequences seq
+INNER JOIN sys.schemas s
+    ON s.schema_id = seq.schema_id
+WHERE seq.name IN
+(
+    'SeqPrestamoCredito',
+    'SeqPagoCredito'
+);
+GO
+
+/*====================================================
+  UN SOLO STOCK POR VARIANTE Y UBICACIÓN
+====================================================*/
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'UX_StockSucursal_VarianteUbicacion'
+      AND object_id = OBJECT_ID('dbo.StockSucursal')
+)
+BEGIN
+    CREATE UNIQUE INDEX
+        UX_StockSucursal_VarianteUbicacion
+    ON dbo.StockSucursal
+    (
+        IdVariante,
+        TipoUbicacion
+    );
+END;
+GO
+
+/*====================================================
+  PRÉSTAMOS Y CRÉDITOS - BUSCAR PRODUCTOS
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_BuscarProductos
+    @Texto NVARCHAR(150)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @Texto =
+        LTRIM(
+            RTRIM(
+                ISNULL(@Texto, '')
+            )
+        );
+
+    SELECT TOP 20
+        p.id_producto AS IdProducto,
+
+        v.IdVariante,
+
+        p.nombre AS NombreProducto,
+
+        c.Nombre AS Categoria,
+
+        v.Descripcion AS Variante,
+
+        v.CodigoBarras AS CodigoBarra,
+
+        v.PrecioUnidad,
+
+        ISNULL(
+            v.PrecioMayor,
+            0
+        ) AS PrecioMayor,
+
+        ISNULL(
+            st.Stock,
+            0
+        ) AS StockTienda
+
+    FROM dbo.productos p
+
+    INNER JOIN dbo.ProductoInventario pi
+        ON pi.id_producto =
+           p.id_producto
+
+    INNER JOIN dbo.Categorias c
+        ON c.IdCategoria =
+           pi.IdCategoria
+
+    INNER JOIN dbo.Variantes v
+        ON v.id_producto =
+           p.id_producto
+
+    INNER JOIN dbo.StockSucursal st
+        ON st.IdVariante =
+           v.IdVariante
+       AND st.TipoUbicacion =
+           'TIENDA'
+
+    WHERE p.estado = 1
+      AND pi.Estado = 1
+      AND v.Estado = 1
+      AND st.Stock > 0
+
+      AND
+      (
+            @Texto = ''
+
+         OR p.nombre
+                LIKE '%' + @Texto + '%'
+
+         OR v.Descripcion
+                LIKE '%' + @Texto + '%'
+
+         OR v.CodigoBarras
+                LIKE '%' + @Texto + '%'
+
+         OR c.Nombre
+                LIKE '%' + @Texto + '%'
+      )
+
+    ORDER BY
+        p.nombre,
+        v.Descripcion;
+END;
+GO
+
+/*====================================================
+  PRÉSTAMOS Y CRÉDITOS - CÓDIGO DE BARRAS
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ObtenerProductoPorCodigo
+    @CodigoBarra VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoBarra =
+        LTRIM(
+            RTRIM(
+                ISNULL(@CodigoBarra, '')
+            )
+        );
+
+    SELECT TOP 1
+        p.id_producto AS IdProducto,
+
+        v.IdVariante,
+
+        p.nombre AS NombreProducto,
+
+        c.Nombre AS Categoria,
+
+        v.Descripcion AS Variante,
+
+        v.CodigoBarras AS CodigoBarra,
+
+        v.PrecioUnidad,
+
+        ISNULL(
+            v.PrecioMayor,
+            0
+        ) AS PrecioMayor,
+
+        ISNULL(
+            st.Stock,
+            0
+        ) AS StockTienda
+
+    FROM dbo.productos p
+
+    INNER JOIN dbo.ProductoInventario pi
+        ON pi.id_producto =
+           p.id_producto
+
+    INNER JOIN dbo.Categorias c
+        ON c.IdCategoria =
+           pi.IdCategoria
+
+    INNER JOIN dbo.Variantes v
+        ON v.id_producto =
+           p.id_producto
+
+    INNER JOIN dbo.StockSucursal st
+        ON st.IdVariante =
+           v.IdVariante
+       AND st.TipoUbicacion =
+           'TIENDA'
+
+    WHERE p.estado = 1
+      AND pi.Estado = 1
+      AND v.Estado = 1
+      AND st.Stock > 0
+      AND v.CodigoBarras =
+          @CodigoBarra;
+END;
+GO
+
+/*====================================================
+  PRÉSTAMOS Y CRÉDITOS - RESUMEN
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ObtenerResumen
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        ISNULL(
+            SUM(
+                CASE
+                    WHEN TipoOperacion = 'PRESTAMO'
+                     AND Estado = 'PENDIENTE'
+                        THEN 1
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS PrestamosPendientes,
+
+        ISNULL(
+            SUM(
+                CASE
+                    WHEN TipoOperacion = 'PRESTAMO'
+                     AND Estado = 'PENDIENTE'
+                        THEN Cantidad
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS StockPrestadoTotal,
+
+        ISNULL(
+            SUM(
+                CASE
+                    WHEN TipoOperacion = 'CREDITO'
+                     AND Estado = 'PENDIENTE'
+                        THEN 1
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS CreditosPendientes,
+
+        ISNULL(
+            SUM(
+                CASE
+                    WHEN TipoOperacion = 'CREDITO'
+                     AND Estado = 'PENDIENTE'
+                        THEN Total
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS DeudaTotalAcumulada
+
+    FROM dbo.PrestamoCredito;
+END;
+GO
+
+/*====================================================
+  PROCEDIMIENTO INTERNO DE REGISTRO
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_RegistrarOperacion
+    @TipoOperacion VARCHAR(15),
+
+    @IdProducto INT,
+
+    @IdVariante INT,
+
+    @ClienteTienda NVARCHAR(150),
+
+    @Cantidad INT,
+
+    @TipoPrecio VARCHAR(20),
+
+    @PrecioUnitario DECIMAL(10,2),
+
+    @FechaPagoEsperada DATE = NULL,
+
+    @IdUsuario INT,
+
+    @Observacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @IdPrestamoCredito INT;
+
+        DECLARE @NumeroOperacion VARCHAR(30);
+
+        DECLARE @Prefijo VARCHAR(5);
+
+        DECLARE @NombreProducto VARCHAR(150);
+
+        DECLARE @VarianteDescripcion NVARCHAR(100);
+
+        DECLARE @CodigoBarra VARCHAR(50);
+
+        DECLARE @PrecioUnidadOriginal DECIMAL(10,2);
+
+        DECLARE @PrecioMayorOriginal DECIMAL(10,2);
+
+        DECLARE @PrecioReferencia DECIMAL(10,2);
+
+        DECLARE @PrecioEditado BIT = 0;
+
+        DECLARE @Total DECIMAL(10,2);
+
+        DECLARE @StockTiendaAntes INT;
+
+        DECLARE @StockTiendaDespues INT;
+
+        DECLARE @StockAlmacenActual INT = 0;
+
+        DECLARE @TipoMovimientoStock VARCHAR(30);
+
+        /*============================================
+          NORMALIZAR DATOS
+        ============================================*/
+
+        SET @TipoOperacion =
+            UPPER(
+                LTRIM(
+                    RTRIM(
+                        ISNULL(
+                            @TipoOperacion,
+                            ''
+                        )
+                    )
+                )
+            );
+
+        SET @TipoPrecio =
+            UPPER(
+                LTRIM(
+                    RTRIM(
+                        ISNULL(
+                            @TipoPrecio,
+                            ''
+                        )
+                    )
+                )
+            );
+
+        SET @ClienteTienda =
+            LTRIM(
+                RTRIM(
+                    ISNULL(
+                        @ClienteTienda,
+                        ''
+                    )
+                )
+            );
+
+        SET @Observacion =
+            NULLIF(
+                LTRIM(
+                    RTRIM(
+                        ISNULL(
+                            @Observacion,
+                            ''
+                        )
+                    )
+                ),
+                ''
+            );
+
+        /*============================================
+          VALIDAR TIPO DE OPERACIÓN
+        ============================================*/
+
+        IF @TipoOperacion NOT IN
+        (
+            'PRESTAMO',
+            'CREDITO'
+        )
+        BEGIN
+            THROW 51000,
+                  'El tipo de operación debe ser PRESTAMO o CREDITO.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR TRABAJADOR
+        ============================================*/
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @IdUsuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 51001,
+                  'Debe seleccionar un trabajador activo.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR CLIENTE O TIENDA
+        ============================================*/
+
+        IF @ClienteTienda = ''
+        BEGIN
+            THROW 51002,
+                  'Debe ingresar el cliente o tienda.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR CANTIDAD
+        ============================================*/
+
+        IF @Cantidad <= 0
+        BEGIN
+            THROW 51003,
+                  'La cantidad debe ser mayor que cero.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR PRECIO
+        ============================================*/
+
+        IF @TipoPrecio NOT IN
+        (
+            'UNIDAD',
+            'MAYOR',
+            'ESPECIAL'
+        )
+        BEGIN
+            THROW 51004,
+                  'El tipo de precio no es válido.',
+                  1;
+        END;
+
+        IF @PrecioUnitario <= 0
+        BEGIN
+            THROW 51005,
+                  'El precio debe ser mayor que cero.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR FECHA DE CRÉDITO
+        ============================================*/
+
+        IF @TipoOperacion = 'CREDITO'
+        BEGIN
+            IF @FechaPagoEsperada IS NULL
+            BEGIN
+                THROW 51006,
+                      'Debe ingresar la fecha esperada de pago.',
+                      1;
+            END;
+
+            IF @FechaPagoEsperada <
+               CAST(GETDATE() AS DATE)
+            BEGIN
+                THROW 51007,
+                      'La fecha esperada de pago no puede ser anterior a hoy.',
+                      1;
+            END;
+        END;
+        ELSE
+        BEGIN
+            SET @FechaPagoEsperada = NULL;
+        END;
+
+        /*============================================
+          OBTENER PRODUCTO Y VARIANTE
+        ============================================*/
+
+        SELECT
+            @NombreProducto =
+                p.nombre,
+
+            @VarianteDescripcion =
+                v.Descripcion,
+
+            @CodigoBarra =
+                v.CodigoBarras,
+
+            @PrecioUnidadOriginal =
+                v.PrecioUnidad,
+
+            @PrecioMayorOriginal =
+                v.PrecioMayor
+
+        FROM dbo.productos p
+
+        INNER JOIN dbo.ProductoInventario pi
+            ON pi.id_producto =
+               p.id_producto
+
+        INNER JOIN dbo.Variantes v
+            ON v.id_producto =
+               p.id_producto
+
+        WHERE p.id_producto =
+              @IdProducto
+
+          AND v.IdVariante =
+              @IdVariante
+
+          AND p.estado = 1
+
+          AND pi.Estado = 1
+
+          AND v.Estado = 1;
+
+        IF @NombreProducto IS NULL
+        BEGIN
+            THROW 51008,
+                  'El producto o la variante no existen o están inactivos.',
+                  1;
+        END;
+
+        /*============================================
+          VALIDAR PRECIO POR MAYOR
+        ============================================*/
+
+        IF @TipoPrecio = 'MAYOR'
+           AND
+           (
+                @PrecioMayorOriginal IS NULL
+                OR
+                @PrecioMayorOriginal <= 0
+           )
+        BEGIN
+            THROW 51009,
+                  'La variante no tiene precio por mayor.',
+                  1;
+        END;
+
+        SET @PrecioReferencia =
+            CASE
+                WHEN @TipoPrecio = 'MAYOR'
+                    THEN @PrecioMayorOriginal
+
+                WHEN @TipoPrecio = 'UNIDAD'
+                    THEN @PrecioUnidadOriginal
+
+                ELSE @PrecioUnitario
+            END;
+
+        SET @PrecioEditado =
+            CASE
+                WHEN @TipoPrecio = 'ESPECIAL'
+                    THEN 1
+
+                WHEN @PrecioUnitario <>
+                     @PrecioReferencia
+                    THEN 1
+
+                ELSE 0
+            END;
+
+        SET @Total =
+            @PrecioUnitario *
+            @Cantidad;
+
+        /*============================================
+          BLOQUEAR Y VALIDAR STOCK DE TIENDA
+        ============================================*/
+
+        SELECT
+            @StockTiendaAntes =
+                ss.Stock
+
+        FROM dbo.StockSucursal ss
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE ss.IdVariante =
+              @IdVariante
+
+          AND ss.TipoUbicacion =
+              'TIENDA';
+
+        IF @StockTiendaAntes IS NULL
+        BEGIN
+            THROW 51010,
+                  'La variante no tiene un registro de stock en tienda.',
+                  1;
+        END;
+
+        IF @StockTiendaAntes <
+           @Cantidad
+        BEGIN
+            THROW 51011,
+                  'El producto no tiene suficiente stock disponible en tienda.',
+                  1;
+        END;
+
+        SELECT
+            @StockAlmacenActual =
+                ISNULL(
+                    ss.Stock,
+                    0
+                )
+
+        FROM dbo.StockSucursal ss
+
+        WHERE ss.IdVariante =
+              @IdVariante
+
+          AND ss.TipoUbicacion =
+              'ALMACEN';
+
+        SET @StockTiendaDespues =
+            @StockTiendaAntes -
+            @Cantidad;
+
+        /*============================================
+          GENERAR NÚMERO DE OPERACIÓN
+        ============================================*/
+
+        SET @Prefijo =
+            CASE
+                WHEN @TipoOperacion =
+                     'PRESTAMO'
+                    THEN 'PR'
+
+                ELSE 'CR'
+            END;
+
+        SET @NumeroOperacion =
+            @Prefijo +
+            '-' +
+            CONVERT(
+                VARCHAR(8),
+                GETDATE(),
+                112
+            ) +
+            '-' +
+            RIGHT(
+                '00000' +
+                CAST(
+                    NEXT VALUE FOR
+                    dbo.SeqPrestamoCredito
+                    AS VARCHAR(10)
+                ),
+                5
+            );
+
+        /*============================================
+          REGISTRAR OPERACIÓN
+        ============================================*/
+
+        INSERT INTO dbo.PrestamoCredito
+        (
+            NumeroOperacion,
+            TipoOperacion,
+            id_producto,
+            IdVariante,
+            NombreProducto,
+            VarianteDescripcion,
+            CodigoBarra,
+            ClienteTienda,
+            Cantidad,
+            TipoPrecio,
+            PrecioUnitario,
+            PrecioEditado,
+            Total,
+            FechaPagoEsperada,
+            Estado,
+            IdUsuarioRegistro,
+            IdUsuarioUltimaAccion,
+            StockDescontado,
+            Observacion
+        )
+        VALUES
+        (
+            @NumeroOperacion,
+            @TipoOperacion,
+            @IdProducto,
+            @IdVariante,
+            @NombreProducto,
+            @VarianteDescripcion,
+            @CodigoBarra,
+            @ClienteTienda,
+            @Cantidad,
+            @TipoPrecio,
+            @PrecioUnitario,
+            @PrecioEditado,
+            @Total,
+            @FechaPagoEsperada,
+            'PENDIENTE',
+            @IdUsuario,
+            @IdUsuario,
+            1,
+            @Observacion
+        );
+
+        SET @IdPrestamoCredito =
+            SCOPE_IDENTITY();
+
+        /*============================================
+          DESCONTAR STOCK DE TIENDA
+        ============================================*/
+
+        UPDATE dbo.StockSucursal
+        SET Stock =
+            @StockTiendaDespues
+        WHERE IdVariante =
+              @IdVariante
+          AND TipoUbicacion =
+              'TIENDA';
+
+        /*============================================
+          RECALCULAR STOCK GENERAL
+        ============================================*/
+
+        UPDATE dbo.productos
+        SET stock =
+        (
+            SELECT
+                ISNULL(
+                    SUM(ss.Stock),
+                    0
+                )
+
+            FROM dbo.StockSucursal ss
+
+            INNER JOIN dbo.Variantes v
+                ON v.IdVariante =
+                   ss.IdVariante
+
+            WHERE v.id_producto =
+                  @IdProducto
+        )
+        WHERE id_producto =
+              @IdProducto;
+
+        /*============================================
+          REGISTRAR MOVIMIENTO DE STOCK
+        ============================================*/
+
+        SET @TipoMovimientoStock =
+            CASE
+                WHEN @TipoOperacion =
+                     'PRESTAMO'
+                    THEN 'PRESTAMO_SALIDA'
+
+                ELSE 'CREDITO_SALIDA'
+            END;
+
+        INSERT INTO dbo.MovimientoStock
+        (
+            IdVariante,
+            TipoMovimiento,
+            Cantidad,
+            StockAlmacenAntes,
+            StockAlmacenDespues,
+            StockTiendaAntes,
+            StockTiendaDespues,
+            id_usuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdVariante,
+            @TipoMovimientoStock,
+            @Cantidad,
+            @StockAlmacenActual,
+            @StockAlmacenActual,
+            @StockTiendaAntes,
+            @StockTiendaDespues,
+            @IdUsuario,
+
+            CONCAT(
+                @TipoOperacion,
+                ' registrado: ',
+                @NumeroOperacion,
+                ' - Cliente/Tienda: ',
+                @ClienteTienda
+            )
+        );
+
+        /*============================================
+          REGISTRAR HISTORIAL
+        ============================================*/
+
+        INSERT INTO dbo.MovimientoPrestamoCredito
+        (
+            IdPrestamoCredito,
+            TipoMovimiento,
+            TipoOperacionAnterior,
+            TipoOperacionNuevo,
+            EstadoAnterior,
+            EstadoNuevo,
+            IdUsuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdPrestamoCredito,
+
+            CASE
+                WHEN @TipoOperacion =
+                     'PRESTAMO'
+                    THEN 'REGISTRO_PRESTAMO'
+
+                ELSE 'REGISTRO_CREDITO'
+            END,
+
+            NULL,
+            @TipoOperacion,
+            NULL,
+            'PENDIENTE',
+            @IdUsuario,
+            @Observacion
+        );
+
+        COMMIT TRANSACTION;
+
+        /*============================================
+          RESULTADO PARA C#
+        ============================================*/
+
+        SELECT
+            @IdPrestamoCredito
+                AS IdPrestamoCredito,
+
+            @NumeroOperacion
+                AS NumeroOperacion,
+
+            @TipoOperacion
+                AS TipoOperacion,
+
+            'PENDIENTE'
+                AS Estado,
+
+            @NombreProducto
+                AS NombreProducto,
+
+            @VarianteDescripcion
+                AS Variante,
+
+            @ClienteTienda
+                AS ClienteTienda,
+
+            @Cantidad
+                AS Cantidad,
+
+            @PrecioUnitario
+                AS PrecioUnitario,
+
+            @Total
+                AS Total,
+
+            @StockTiendaDespues
+                AS StockTienda;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+/*====================================================
+  REGISTRAR PRÉSTAMO
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_RegistrarPrestamo
+    @IdProducto INT,
+
+    @IdVariante INT,
+
+    @ClienteTienda NVARCHAR(150),
+
+    @Cantidad INT,
+
+    @TipoPrecio VARCHAR(20),
+
+    @PrecioUnitario DECIMAL(10,2),
+
+    @IdUsuario INT,
+
+    @Observacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    EXEC dbo.sp_PC_RegistrarOperacion
+        @TipoOperacion =
+            'PRESTAMO',
+
+        @IdProducto =
+            @IdProducto,
+
+        @IdVariante =
+            @IdVariante,
+
+        @ClienteTienda =
+            @ClienteTienda,
+
+        @Cantidad =
+            @Cantidad,
+
+        @TipoPrecio =
+            @TipoPrecio,
+
+        @PrecioUnitario =
+            @PrecioUnitario,
+
+        @FechaPagoEsperada =
+            NULL,
+
+        @IdUsuario =
+            @IdUsuario,
+
+        @Observacion =
+            @Observacion;
+END;
+GO
+
+/*====================================================
+  REGISTRAR CRÉDITO
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_RegistrarCredito
+    @IdProducto INT,
+
+    @IdVariante INT,
+
+    @ClienteTienda NVARCHAR(150),
+
+    @Cantidad INT,
+
+    @TipoPrecio VARCHAR(20),
+
+    @PrecioUnitario DECIMAL(10,2),
+
+    @FechaPagoEsperada DATE,
+
+    @IdUsuario INT,
+
+    @Observacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    EXEC dbo.sp_PC_RegistrarOperacion
+        @TipoOperacion =
+            'CREDITO',
+
+        @IdProducto =
+            @IdProducto,
+
+        @IdVariante =
+            @IdVariante,
+
+        @ClienteTienda =
+            @ClienteTienda,
+
+        @Cantidad =
+            @Cantidad,
+
+        @TipoPrecio =
+            @TipoPrecio,
+
+        @PrecioUnitario =
+            @PrecioUnitario,
+
+        @FechaPagoEsperada =
+            @FechaPagoEsperada,
+
+        @IdUsuario =
+            @IdUsuario,
+
+        @Observacion =
+            @Observacion;
+END;
+GO
+
+USE SistemaVentas;
+GO
+
+SELECT
+    s.name AS Esquema,
+    p.name AS Procedimiento
+FROM sys.procedures p
+INNER JOIN sys.schemas s
+    ON s.schema_id =
+       p.schema_id
+WHERE p.name IN
+(
+    'sp_PC_BuscarProductos',
+    'sp_PC_ObtenerProductoPorCodigo',
+    'sp_PC_ObtenerResumen',
+    'sp_PC_RegistrarOperacion',
+    'sp_PC_RegistrarPrestamo',
+    'sp_PC_RegistrarCredito'
+)
+ORDER BY p.name;
+GO
+
+/*====================================================
+  LISTAR PRÉSTAMOS
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ListarPrestamos
+    @Texto NVARCHAR(150) = NULL,
+    @Estado VARCHAR(20) = NULL,
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL,
+    @Pagina INT = 1,
+    @TamanoPagina INT = 5
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @Texto =
+        LTRIM(
+            RTRIM(
+                ISNULL(@Texto, N'')
+            )
+        );
+
+    SET @Estado =
+        UPPER(
+            LTRIM(
+                RTRIM(
+                    ISNULL(@Estado, '')
+                )
+            )
+        );
+
+    IF @Pagina < 1
+        SET @Pagina = 1;
+
+    IF @TamanoPagina < 1
+        SET @TamanoPagina = 5;
+
+    IF @TamanoPagina > 100
+        SET @TamanoPagina = 100;
+
+    ;WITH DatosBase AS
+    (
+        SELECT
+            pc.IdPrestamoCredito,
+
+            pc.NumeroOperacion,
+
+            pc.id_producto AS IdProducto,
+
+            pc.IdVariante,
+
+            pc.NombreProducto,
+
+            pc.VarianteDescripcion AS Variante,
+
+            pc.CodigoBarra,
+
+            pc.ClienteTienda,
+
+            pc.Cantidad,
+
+            pc.TipoPrecio,
+
+            pc.PrecioUnitario,
+
+            pc.PrecioEditado,
+
+            pc.Total,
+
+            pc.FechaRegistro AS FechaPrestamo,
+
+            pc.Estado,
+
+            pc.AccionFinal,
+
+            pc.FechaFinalizacion AS FechaDevolucion,
+
+            pc.StockDescontado,
+
+            pc.Observacion,
+
+            pc.IdUsuarioRegistro,
+
+            usuarioRegistro.nombre
+                AS NombreTrabajadorRegistro,
+
+            pc.IdUsuarioUltimaAccion,
+
+            usuarioAccion.nombre
+                AS NombreTrabajadorUltimaAccion
+
+        FROM dbo.PrestamoCredito pc
+
+        INNER JOIN dbo.usuarios usuarioRegistro
+            ON usuarioRegistro.id_usuario =
+               pc.IdUsuarioRegistro
+
+        LEFT JOIN dbo.usuarios usuarioAccion
+            ON usuarioAccion.id_usuario =
+               pc.IdUsuarioUltimaAccion
+
+        WHERE pc.TipoOperacion = 'PRESTAMO'
+
+          AND
+          (
+                @Texto = N''
+
+             OR pc.NumeroOperacion
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.NombreProducto
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.VarianteDescripcion
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.CodigoBarra
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.ClienteTienda
+                    LIKE '%' + @Texto + '%'
+          )
+
+          AND
+          (
+                @Estado = ''
+             OR pc.Estado = @Estado
+          )
+
+          AND
+          (
+                @FechaInicio IS NULL
+             OR pc.FechaRegistro >= @FechaInicio
+          )
+
+          AND
+          (
+                @FechaFin IS NULL
+             OR pc.FechaRegistro <
+                    DATEADD(
+                        DAY,
+                        1,
+                        @FechaFin
+                    )
+          )
+    ),
+    DatosPaginados AS
+    (
+        SELECT
+            *,
+
+            COUNT(*) OVER()
+                AS TotalRegistros,
+
+            ROW_NUMBER() OVER
+            (
+                ORDER BY
+                    FechaPrestamo DESC,
+                    IdPrestamoCredito DESC
+            ) AS NumeroFila
+
+        FROM DatosBase
+    )
+    SELECT
+        IdPrestamoCredito,
+        NumeroOperacion,
+        IdProducto,
+        IdVariante,
+        NombreProducto,
+        Variante,
+        CodigoBarra,
+        ClienteTienda,
+        Cantidad,
+        TipoPrecio,
+        PrecioUnitario,
+        PrecioEditado,
+        Total,
+        FechaPrestamo,
+        Estado,
+        AccionFinal,
+        FechaDevolucion,
+        StockDescontado,
+        Observacion,
+        IdUsuarioRegistro,
+        NombreTrabajadorRegistro,
+        IdUsuarioUltimaAccion,
+        NombreTrabajadorUltimaAccion,
+
+        CASE
+            WHEN Estado = 'PENDIENTE'
+                THEN 'PENDIENTE DE DEVOLUCIÓN'
+
+            WHEN AccionFinal = 'DEVOLUCION'
+                THEN 'DEVUELTO'
+
+            ELSE 'COMPLETADO'
+        END AS AccionActual,
+
+        TotalRegistros,
+
+        CONVERT(
+            INT,
+            CEILING(
+                TotalRegistros * 1.0 /
+                @TamanoPagina
+            )
+        ) AS TotalPaginas,
+
+        @Pagina AS PaginaActual
+
+    FROM DatosPaginados
+
+    WHERE NumeroFila BETWEEN
+          (
+              (@Pagina - 1) *
+              @TamanoPagina
+          ) + 1
+
+          AND
+
+          @Pagina *
+          @TamanoPagina
+
+    ORDER BY NumeroFila;
+END;
+GO
+
+/*====================================================
+  LISTAR CRÉDITOS / COBRANZAS
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ListarCreditos
+    @Texto NVARCHAR(150) = NULL,
+    @Estado VARCHAR(20) = NULL,
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL,
+    @Pagina INT = 1,
+    @TamanoPagina INT = 5
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @Texto =
+        LTRIM(
+            RTRIM(
+                ISNULL(@Texto, N'')
+            )
+        );
+
+    SET @Estado =
+        UPPER(
+            LTRIM(
+                RTRIM(
+                    ISNULL(@Estado, '')
+                )
+            )
+        );
+
+    IF @Pagina < 1
+        SET @Pagina = 1;
+
+    IF @TamanoPagina < 1
+        SET @TamanoPagina = 5;
+
+    IF @TamanoPagina > 100
+        SET @TamanoPagina = 100;
+
+    ;WITH DatosBase AS
+    (
+        SELECT
+            pc.IdPrestamoCredito,
+
+            pc.NumeroOperacion,
+
+            pc.id_producto AS IdProducto,
+
+            pc.IdVariante,
+
+            pc.NombreProducto,
+
+            pc.VarianteDescripcion AS Variante,
+
+            pc.CodigoBarra,
+
+            pc.ClienteTienda,
+
+            pc.Cantidad,
+
+            pc.TipoPrecio,
+
+            pc.PrecioUnitario,
+
+            pc.PrecioEditado,
+
+            pc.Total AS Deuda,
+
+            pc.FechaRegistro,
+
+            pc.FechaPagoEsperada,
+
+            pc.Estado,
+
+            pc.AccionFinal,
+
+            pc.FechaFinalizacion
+                AS FechaPagoReal,
+
+            pc.MetodoPago,
+
+            pc.StockDescontado,
+
+            pc.Observacion,
+
+            pc.IdUsuarioRegistro,
+
+            usuarioRegistro.nombre
+                AS NombreTrabajadorRegistro,
+
+            pc.IdUsuarioUltimaAccion,
+
+            usuarioAccion.nombre
+                AS NombreTrabajadorUltimaAccion,
+
+            pago.NumeroPago,
+
+            pago.IdPagoCredito,
+
+            pago.IdCaja,
+
+            pago.FechaPago
+
+        FROM dbo.PrestamoCredito pc
+
+        INNER JOIN dbo.usuarios usuarioRegistro
+            ON usuarioRegistro.id_usuario =
+               pc.IdUsuarioRegistro
+
+        LEFT JOIN dbo.usuarios usuarioAccion
+            ON usuarioAccion.id_usuario =
+               pc.IdUsuarioUltimaAccion
+
+        LEFT JOIN dbo.PagoCredito pago
+            ON pago.IdPrestamoCredito =
+               pc.IdPrestamoCredito
+
+        WHERE pc.TipoOperacion = 'CREDITO'
+
+          AND
+          (
+                @Texto = N''
+
+             OR pc.NumeroOperacion
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.NombreProducto
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.VarianteDescripcion
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.CodigoBarra
+                    LIKE '%' + @Texto + '%'
+
+             OR pc.ClienteTienda
+                    LIKE '%' + @Texto + '%'
+
+             OR pago.NumeroPago
+                    LIKE '%' + @Texto + '%'
+          )
+
+          AND
+          (
+                @Estado = ''
+             OR pc.Estado = @Estado
+          )
+
+          AND
+          (
+                @FechaInicio IS NULL
+             OR pc.FechaRegistro >= @FechaInicio
+          )
+
+          AND
+          (
+                @FechaFin IS NULL
+             OR pc.FechaRegistro <
+                    DATEADD(
+                        DAY,
+                        1,
+                        @FechaFin
+                    )
+          )
+    ),
+    DatosPaginados AS
+    (
+        SELECT
+            *,
+
+            COUNT(*) OVER()
+                AS TotalRegistros,
+
+            ROW_NUMBER() OVER
+            (
+                ORDER BY
+                    FechaRegistro DESC,
+                    IdPrestamoCredito DESC
+            ) AS NumeroFila
+
+        FROM DatosBase
+    )
+    SELECT
+        IdPrestamoCredito,
+        NumeroOperacion,
+        IdProducto,
+        IdVariante,
+        NombreProducto,
+        Variante,
+        CodigoBarra,
+        ClienteTienda,
+        Cantidad,
+        TipoPrecio,
+        PrecioUnitario,
+        PrecioEditado,
+        Deuda,
+        FechaRegistro,
+        FechaPagoEsperada,
+        Estado,
+        AccionFinal,
+        FechaPagoReal,
+        MetodoPago,
+        StockDescontado,
+        Observacion,
+        IdUsuarioRegistro,
+        NombreTrabajadorRegistro,
+        IdUsuarioUltimaAccion,
+        NombreTrabajadorUltimaAccion,
+        IdPagoCredito,
+        NumeroPago,
+        IdCaja,
+        FechaPago,
+
+        CASE
+            WHEN Estado = 'PENDIENTE'
+                THEN 'PENDIENTE DE PAGO'
+
+            WHEN AccionFinal = 'PAGO'
+                THEN 'PAGADO'
+
+            ELSE 'COMPLETADO'
+        END AS AccionActual,
+
+        TotalRegistros,
+
+        CONVERT(
+            INT,
+            CEILING(
+                TotalRegistros * 1.0 /
+                @TamanoPagina
+            )
+        ) AS TotalPaginas,
+
+        @Pagina AS PaginaActual
+
+    FROM DatosPaginados
+
+    WHERE NumeroFila BETWEEN
+          (
+              (@Pagina - 1) *
+              @TamanoPagina
+          ) + 1
+
+          AND
+
+          @Pagina *
+          @TamanoPagina
+
+    ORDER BY NumeroFila;
+END;
+GO
+
+/*====================================================
+  OBTENER DETALLE DE PRÉSTAMO O CRÉDITO
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ObtenerDetalle
+    @IdPrestamoCredito INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    /*============================================
+      RESULTADO 1: INFORMACIÓN GENERAL
+    ============================================*/
+    SELECT
+        pc.IdPrestamoCredito,
+
+        pc.NumeroOperacion,
+
+        pc.TipoOperacion,
+
+        pc.id_producto AS IdProducto,
+
+        pc.IdVariante,
+
+        pc.NombreProducto,
+
+        pc.VarianteDescripcion AS Variante,
+
+        pc.CodigoBarra,
+
+        pc.ClienteTienda,
+
+        pc.Cantidad,
+
+        pc.TipoPrecio,
+
+        pc.PrecioUnitario,
+
+        pc.PrecioEditado,
+
+        pc.Total,
+
+        pc.FechaRegistro,
+
+        pc.FechaPagoEsperada,
+
+        pc.Estado,
+
+        pc.AccionFinal,
+
+        pc.FechaFinalizacion,
+
+        pc.MetodoPago,
+
+        pc.StockDescontado,
+
+        pc.Observacion,
+
+        pc.IdUsuarioRegistro,
+
+        usuarioRegistro.nombre
+            AS NombreTrabajadorRegistro,
+
+        pc.IdUsuarioUltimaAccion,
+
+        usuarioAccion.nombre
+            AS NombreTrabajadorUltimaAccion,
+
+        pago.IdPagoCredito,
+
+        pago.NumeroPago,
+
+        pago.IdCaja,
+
+        pago.Monto AS MontoPagado,
+
+        pago.FechaPago,
+
+        pago.MetodoPago
+            AS MetodoPagoRegistrado,
+
+        pago.Observacion
+            AS ObservacionPago,
+
+        CASE
+            WHEN pc.TipoOperacion = 'PRESTAMO'
+             AND pc.Estado = 'PENDIENTE'
+                THEN 'PENDIENTE DE DEVOLUCIÓN'
+
+            WHEN pc.TipoOperacion = 'PRESTAMO'
+             AND pc.AccionFinal = 'DEVOLUCION'
+                THEN 'DEVUELTO'
+
+            WHEN pc.TipoOperacion = 'CREDITO'
+             AND pc.Estado = 'PENDIENTE'
+                THEN 'PENDIENTE DE PAGO'
+
+            WHEN pc.TipoOperacion = 'CREDITO'
+             AND pc.AccionFinal = 'PAGO'
+                THEN 'PAGADO'
+
+            ELSE 'COMPLETADO'
+        END AS AccionActual
+
+    FROM dbo.PrestamoCredito pc
+
+    INNER JOIN dbo.usuarios usuarioRegistro
+        ON usuarioRegistro.id_usuario =
+           pc.IdUsuarioRegistro
+
+    LEFT JOIN dbo.usuarios usuarioAccion
+        ON usuarioAccion.id_usuario =
+           pc.IdUsuarioUltimaAccion
+
+    LEFT JOIN dbo.PagoCredito pago
+        ON pago.IdPrestamoCredito =
+           pc.IdPrestamoCredito
+
+    WHERE pc.IdPrestamoCredito =
+          @IdPrestamoCredito;
+
+
+    /*============================================
+      RESULTADO 2: HISTORIAL
+    ============================================*/
+    SELECT
+        movimiento.IdMovimientoPC,
+
+        movimiento.IdPrestamoCredito,
+
+        movimiento.TipoMovimiento,
+
+        movimiento.TipoOperacionAnterior,
+
+        movimiento.TipoOperacionNuevo,
+
+        movimiento.EstadoAnterior,
+
+        movimiento.EstadoNuevo,
+
+        movimiento.IdUsuario,
+
+        usuario.nombre
+            AS NombreTrabajador,
+
+        movimiento.FechaMovimiento,
+
+        movimiento.Observacion
+
+    FROM dbo.MovimientoPrestamoCredito movimiento
+
+    INNER JOIN dbo.usuarios usuario
+        ON usuario.id_usuario =
+           movimiento.IdUsuario
+
+    WHERE movimiento.IdPrestamoCredito =
+          @IdPrestamoCredito
+
+    ORDER BY
+        movimiento.FechaMovimiento DESC,
+        movimiento.IdMovimientoPC DESC;
+END;
+GO
+
+/*====================================================
+  REGISTRAR DEVOLUCIÓN
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_RegistrarDevolucion
+    @IdPrestamoCredito INT,
+    @IdUsuario INT,
+    @Observacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @TipoOperacion VARCHAR(15);
+        DECLARE @Estado VARCHAR(20);
+        DECLARE @StockDescontado BIT;
+
+        DECLARE @IdProducto INT;
+        DECLARE @IdVariante INT;
+        DECLARE @Cantidad INT;
+        DECLARE @NumeroOperacion VARCHAR(30);
+
+        DECLARE @StockAlmacenActual INT = 0;
+        DECLARE @StockTiendaAntes INT;
+        DECLARE @StockTiendaDespues INT;
+
+        SET @Observacion =
+            NULLIF(
+                LTRIM(
+                    RTRIM(
+                        ISNULL(
+                            @Observacion,
+                            ''
+                        )
+                    )
+                ),
+                ''
+            );
+
+        /* VALIDAR TRABAJADOR */
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @IdUsuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 51100,
+                  'Debe seleccionar un trabajador activo.',
+                  1;
+        END;
+
+        /* BLOQUEAR Y OBTENER PRÉSTAMO */
+        SELECT
+            @TipoOperacion =
+                TipoOperacion,
+
+            @Estado =
+                Estado,
+
+            @StockDescontado =
+                StockDescontado,
+
+            @IdProducto =
+                id_producto,
+
+            @IdVariante =
+                IdVariante,
+
+            @Cantidad =
+                Cantidad,
+
+            @NumeroOperacion =
+                NumeroOperacion
+
+        FROM dbo.PrestamoCredito
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        IF @TipoOperacion IS NULL
+        BEGIN
+            THROW 51101,
+                  'El préstamo seleccionado no existe.',
+                  1;
+        END;
+
+        IF @TipoOperacion <> 'PRESTAMO'
+        BEGIN
+            THROW 51102,
+                  'El registro seleccionado no pertenece a préstamos.',
+                  1;
+        END;
+
+        IF @Estado <> 'PENDIENTE'
+        BEGIN
+            THROW 51103,
+                  'El préstamo ya fue completado.',
+                  1;
+        END;
+
+        IF @StockDescontado <> 1
+        BEGIN
+            THROW 51104,
+                  'El stock de este préstamo ya fue devuelto.',
+                  1;
+        END;
+
+        /* OBTENER STOCK DE TIENDA */
+        SELECT
+            @StockTiendaAntes =
+                Stock
+
+        FROM dbo.StockSucursal
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE IdVariante =
+              @IdVariante
+
+          AND TipoUbicacion =
+              'TIENDA';
+
+        IF @StockTiendaAntes IS NULL
+        BEGIN
+            INSERT INTO dbo.StockSucursal
+            (
+                IdVariante,
+                TipoUbicacion,
+                Stock
+            )
+            VALUES
+            (
+                @IdVariante,
+                'TIENDA',
+                0
+            );
+
+            SET @StockTiendaAntes = 0;
+        END;
+
+        SELECT
+            @StockAlmacenActual =
+                ISNULL(
+                    Stock,
+                    0
+                )
+
+        FROM dbo.StockSucursal
+
+        WHERE IdVariante =
+              @IdVariante
+
+          AND TipoUbicacion =
+              'ALMACEN';
+
+        SET @StockTiendaDespues =
+            @StockTiendaAntes +
+            @Cantidad;
+
+        /* DEVOLVER STOCK A TIENDA */
+        UPDATE dbo.StockSucursal
+        SET Stock =
+            @StockTiendaDespues
+        WHERE IdVariante =
+              @IdVariante
+          AND TipoUbicacion =
+              'TIENDA';
+
+        /* RECALCULAR STOCK GENERAL */
+        UPDATE dbo.productos
+        SET stock =
+        (
+            SELECT
+                ISNULL(
+                    SUM(stockSucursal.Stock),
+                    0
+                )
+
+            FROM dbo.StockSucursal stockSucursal
+
+            INNER JOIN dbo.Variantes variante
+                ON variante.IdVariante =
+                   stockSucursal.IdVariante
+
+            WHERE variante.id_producto =
+                  @IdProducto
+        )
+        WHERE id_producto =
+              @IdProducto;
+
+        /* COMPLETAR PRÉSTAMO */
+        UPDATE dbo.PrestamoCredito
+        SET
+            Estado =
+                'COMPLETADO',
+
+            AccionFinal =
+                'DEVOLUCION',
+
+            FechaFinalizacion =
+                GETDATE(),
+
+            IdUsuarioUltimaAccion =
+                @IdUsuario,
+
+            StockDescontado =
+                0
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        /* MOVIMIENTO DE STOCK */
+        INSERT INTO dbo.MovimientoStock
+        (
+            IdVariante,
+            TipoMovimiento,
+            Cantidad,
+            StockAlmacenAntes,
+            StockAlmacenDespues,
+            StockTiendaAntes,
+            StockTiendaDespues,
+            id_usuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdVariante,
+            'PRESTAMO_DEVOLUCION',
+            @Cantidad,
+            @StockAlmacenActual,
+            @StockAlmacenActual,
+            @StockTiendaAntes,
+            @StockTiendaDespues,
+            @IdUsuario,
+
+            CONCAT(
+                'Devolución del préstamo ',
+                @NumeroOperacion
+            )
+        );
+
+        /* HISTORIAL */
+        INSERT INTO dbo.MovimientoPrestamoCredito
+        (
+            IdPrestamoCredito,
+            TipoMovimiento,
+            TipoOperacionAnterior,
+            TipoOperacionNuevo,
+            EstadoAnterior,
+            EstadoNuevo,
+            IdUsuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdPrestamoCredito,
+            'DEVOLUCION',
+            'PRESTAMO',
+            'PRESTAMO',
+            'PENDIENTE',
+            'COMPLETADO',
+            @IdUsuario,
+            @Observacion
+        );
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdPrestamoCredito
+                AS IdPrestamoCredito,
+
+            @NumeroOperacion
+                AS NumeroOperacion,
+
+            'COMPLETADO'
+                AS Estado,
+
+            'DEVOLUCION'
+                AS AccionFinal,
+
+            @Cantidad
+                AS CantidadDevuelta,
+
+            @StockTiendaDespues
+                AS StockTienda,
+
+            GETDATE()
+                AS FechaDevolucion;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+/*====================================================
+  PASAR PRÉSTAMO A COBRANZA
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ConvertirPrestamoACredito
+    @IdPrestamoCredito INT,
+    @IdUsuario INT,
+    @FechaPagoEsperada DATE,
+    @Observacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @TipoOperacion VARCHAR(15);
+        DECLARE @Estado VARCHAR(20);
+        DECLARE @StockDescontado BIT;
+        DECLARE @NumeroOperacion VARCHAR(30);
+
+        SET @Observacion =
+            NULLIF(
+                LTRIM(
+                    RTRIM(
+                        ISNULL(
+                            @Observacion,
+                            ''
+                        )
+                    )
+                ),
+                ''
+            );
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @IdUsuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 51200,
+                  'Debe seleccionar un trabajador activo.',
+                  1;
+        END;
+
+        IF @FechaPagoEsperada IS NULL
+        BEGIN
+            THROW 51201,
+                  'Debe ingresar la fecha esperada de pago.',
+                  1;
+        END;
+
+        IF @FechaPagoEsperada <
+           CAST(GETDATE() AS DATE)
+        BEGIN
+            THROW 51202,
+                  'La fecha esperada de pago no puede ser anterior a hoy.',
+                  1;
+        END;
+
+        SELECT
+            @TipoOperacion =
+                TipoOperacion,
+
+            @Estado =
+                Estado,
+
+            @StockDescontado =
+                StockDescontado,
+
+            @NumeroOperacion =
+                NumeroOperacion
+
+        FROM dbo.PrestamoCredito
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        IF @TipoOperacion IS NULL
+        BEGIN
+            THROW 51203,
+                  'El préstamo seleccionado no existe.',
+                  1;
+        END;
+
+        IF @TipoOperacion <> 'PRESTAMO'
+        BEGIN
+            THROW 51204,
+                  'El registro ya no pertenece a préstamos.',
+                  1;
+        END;
+
+        IF @Estado <> 'PENDIENTE'
+        BEGIN
+            THROW 51205,
+                  'Solo se puede convertir un préstamo pendiente.',
+                  1;
+        END;
+
+        IF @StockDescontado <> 1
+        BEGIN
+            THROW 51206,
+                  'La operación no tiene stock descontado.',
+                  1;
+        END;
+
+        UPDATE dbo.PrestamoCredito
+        SET
+            TipoOperacion =
+                'CREDITO',
+
+            FechaPagoEsperada =
+                @FechaPagoEsperada,
+
+            IdUsuarioUltimaAccion =
+                @IdUsuario,
+
+            Observacion =
+                CASE
+                    WHEN @Observacion IS NULL
+                        THEN Observacion
+                    ELSE @Observacion
+                END
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        INSERT INTO dbo.MovimientoPrestamoCredito
+        (
+            IdPrestamoCredito,
+            TipoMovimiento,
+            TipoOperacionAnterior,
+            TipoOperacionNuevo,
+            EstadoAnterior,
+            EstadoNuevo,
+            IdUsuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdPrestamoCredito,
+            'CONVERSION_A_CREDITO',
+            'PRESTAMO',
+            'CREDITO',
+            'PENDIENTE',
+            'PENDIENTE',
+            @IdUsuario,
+            @Observacion
+        );
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdPrestamoCredito
+                AS IdPrestamoCredito,
+
+            @NumeroOperacion
+                AS NumeroOperacion,
+
+            'CREDITO'
+                AS TipoOperacion,
+
+            'PENDIENTE'
+                AS Estado,
+
+            @FechaPagoEsperada
+                AS FechaPagoEsperada;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+/*====================================================
+  PASAR COBRANZA A PRÉSTAMO
+====================================================*/
+CREATE OR ALTER PROCEDURE dbo.sp_PC_ConvertirCreditoAPrestamo
+    @IdPrestamoCredito INT,
+    @IdUsuario INT,
+    @Observacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @TipoOperacion VARCHAR(15);
+        DECLARE @Estado VARCHAR(20);
+        DECLARE @StockDescontado BIT;
+        DECLARE @NumeroOperacion VARCHAR(30);
+
+        SET @Observacion =
+            NULLIF(
+                LTRIM(
+                    RTRIM(
+                        ISNULL(
+                            @Observacion,
+                            ''
+                        )
+                    )
+                ),
+                ''
+            );
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.usuarios
+            WHERE id_usuario = @IdUsuario
+              AND estado = 1
+        )
+        BEGIN
+            THROW 51300,
+                  'Debe seleccionar un trabajador activo.',
+                  1;
+        END;
+
+        SELECT
+            @TipoOperacion =
+                TipoOperacion,
+
+            @Estado =
+                Estado,
+
+            @StockDescontado =
+                StockDescontado,
+
+            @NumeroOperacion =
+                NumeroOperacion
+
+        FROM dbo.PrestamoCredito
+            WITH (UPDLOCK, HOLDLOCK)
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        IF @TipoOperacion IS NULL
+        BEGIN
+            THROW 51301,
+                  'La cobranza seleccionada no existe.',
+                  1;
+        END;
+
+        IF @TipoOperacion <> 'CREDITO'
+        BEGIN
+            THROW 51302,
+                  'El registro ya no pertenece a cobranzas.',
+                  1;
+        END;
+
+        IF @Estado <> 'PENDIENTE'
+        BEGIN
+            THROW 51303,
+                  'Solo se puede convertir una cobranza pendiente.',
+                  1;
+        END;
+
+        IF @StockDescontado <> 1
+        BEGIN
+            THROW 51304,
+                  'La operación no tiene stock descontado.',
+                  1;
+        END;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.PagoCredito
+            WHERE IdPrestamoCredito =
+                  @IdPrestamoCredito
+        )
+        BEGIN
+            THROW 51305,
+                  'No se puede pasar a préstamo porque la cobranza ya tiene un pago.',
+                  1;
+        END;
+
+        UPDATE dbo.PrestamoCredito
+        SET
+            TipoOperacion =
+                'PRESTAMO',
+
+            FechaPagoEsperada =
+                NULL,
+
+            MetodoPago =
+                NULL,
+
+            IdUsuarioUltimaAccion =
+                @IdUsuario,
+
+            Observacion =
+                CASE
+                    WHEN @Observacion IS NULL
+                        THEN Observacion
+                    ELSE @Observacion
+                END
+
+        WHERE IdPrestamoCredito =
+              @IdPrestamoCredito;
+
+        INSERT INTO dbo.MovimientoPrestamoCredito
+        (
+            IdPrestamoCredito,
+            TipoMovimiento,
+            TipoOperacionAnterior,
+            TipoOperacionNuevo,
+            EstadoAnterior,
+            EstadoNuevo,
+            IdUsuario,
+            Observacion
+        )
+        VALUES
+        (
+            @IdPrestamoCredito,
+            'CONVERSION_A_PRESTAMO',
+            'CREDITO',
+            'PRESTAMO',
+            'PENDIENTE',
+            'PENDIENTE',
+            @IdUsuario,
+            @Observacion
+        );
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdPrestamoCredito
+                AS IdPrestamoCredito,
+
+            @NumeroOperacion
+                AS NumeroOperacion,
+
+            'PRESTAMO'
+                AS TipoOperacion,
+
+            'PENDIENTE'
+                AS Estado;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+SELECT
+    esquema.name AS Esquema,
+    procedimiento.name AS Procedimiento
+FROM sys.procedures procedimiento
+INNER JOIN sys.schemas esquema
+    ON esquema.schema_id =
+       procedimiento.schema_id
+WHERE procedimiento.name IN
+(
+    'sp_PC_ListarPrestamos',
+    'sp_PC_ListarCreditos',
+    'sp_PC_ObtenerDetalle',
+    'sp_PC_RegistrarDevolucion',
+    'sp_PC_ConvertirPrestamoACredito',
+    'sp_PC_ConvertirCreditoAPrestamo'
+)
+ORDER BY procedimiento.name;
+GO
+
+EXEC dbo.sp_PC_ListarPrestamos
+    @Texto = NULL,
+    @Estado = NULL,
+    @FechaInicio = NULL,
+    @FechaFin = NULL,
+    @Pagina = 1,
+    @TamanoPagina = 5;
+GO
+
+EXEC dbo.sp_PC_ListarCreditos
+    @Texto = NULL,
+    @Estado = NULL,
+    @FechaInicio = NULL,
+    @FechaFin = NULL,
+    @Pagina = 1,
+    @TamanoPagina = 5;
+GO
